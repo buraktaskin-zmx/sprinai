@@ -39,6 +39,35 @@ export const chatService = {
             console.error('Upload error:', error);
             throw error;
         }
+    },
+
+    generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+        try {
+            const response = await api.post('/quiz/generate', {
+                username: username,
+                questionCount: questionCount,
+                difficulty: difficulty
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Quiz generation error:', error);
+            throw error;
+        }
+    },
+
+    // YENİ ALTERNATIF METHOD
+    generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+        try {
+            const response = await api.post('/quiz/generate-rag', {
+                username: username,
+                questionCount: questionCount,
+                difficulty: difficulty
+            });
+            return response.data;
+        } catch (error) {
+            console.error('Quiz RAG generation error:', error);
+            throw error;
+        }
     }
 };
 

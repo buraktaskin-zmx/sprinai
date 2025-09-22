@@ -19,7 +19,7 @@ public class DocumentController {
 	
 	@PostMapping("/upload")
 	public ResponseEntity<Map<String, String>> uploadDocument(
-		@RequestHeader("username") String username,
+		@RequestHeader(value = "username", defaultValue = "burak") String username,
 		@RequestParam("file") MultipartFile file) {
 		
 		String documentId = documentService.uploadDocument(username, file);

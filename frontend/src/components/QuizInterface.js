@@ -51,8 +51,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 `D) ${q.options.D}`
                             ],
                             correctAnswer: correctAnswerIndex,
-                            explanation: `Doğru cevap: ${answerLetter}) ${q.options[answerLetter]}`,
-                            // Backend için gerekli format
+                            explanation: `Correct answer: ${answerLetter}) ${q.options[answerLetter]}`,
                             originalOptions: q.options
                         };
                     });
@@ -79,97 +78,88 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
 
     const getDefaultQuestions = () => [
         {
-            question: "Doküman yükleme sırasında bir sorun oluştu. Lütfen tekrar deneyin.",
+            question: "There was an issue during document upload. Please try again.",
             options: [
-                "A) Dokümanı yeniden yükle",
-                "B) Sayfayı yenile",
-                "C) Farklı doküman dene",
-                "D) Destek al"
+                "A) Re-upload the document",
+                "B) Refresh the page",
+                "C) Try a different document",
+                "D) Get support"
             ],
             correctAnswer: 0,
-            explanation: "Lütfen dokümanınızı yeniden yükleyip tekrar deneyin.",
-            originalOptions: {
-                A: "Dokümanı yeniden yükle",
-                B: "Sayfayı yenile",
-                C: "Farklı doküman dene",
-                D: "Destek al"
-            }
+            explanation: "Please re-upload your document and try again.",
+            originalOptions: { A: "Re-upload the document", B: "Refresh the page", C: "Try a different document", D: "Get support" }
         }
     ];
 
-    const handleAnswerSelect = (answerIndex) => {
+    const handleAnswerSelect = (optionIndex) => {
         setSelectedAnswers({
             ...selectedAnswers,
-            [currentQuestionIndex]: answerIndex
+            [currentQuestionIndex]: optionIndex
         });
     };
 
-    const handleNext = () => {
+    const nextQuestion = () => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
-        } else {
-            evaluateQuiz();
         }
     };
 
-    const handlePrevious = () => {
+    const prevQuestion = () => {
         if (currentQuestionIndex > 0) {
             setCurrentQuestionIndex(currentQuestionIndex - 1);
         }
     };
 
-    const evaluateQuiz = async () => {
+    const finishQuiz = async () => {
+        setIsAnalyzing(true);
+
         try {
-            console.log('Evaluating quiz...');
-
-            // Backend için format hazırla
-            const questionsForBackend = questions.map(q => ({
-                question: q.question,
-                options: q.originalOptions,
-                correctAnswer: q.correctAnswer
-            }));
-
-            const result = await chatService.evaluateQuiz(questionsForBackend, selectedAnswers);
-            console.log('Quiz evaluation result:', result);
-
+            const result = await chatService.evaluateQuiz(questions, selectedAnswers, 'burak');
             setQuizResult(result);
             setShowResults(true);
-        } catch (error) {
-            console.error('Quiz evaluation failed:', error);
-            // Fallback: local calculation
-            let correctCount = 0;
-            questions.forEach((question, index) => {
-                if (selectedAnswers[index] === question.correctAnswer) {
-                    correctCount++;
+
+            if (result.wrongAnswers && result.wrongAnswers.length > 0) {
+                try {
+                    const analysis = await chatService.analyzeMistakes(result.wrongAnswers, 'burak');
+                    setMistakeAnalysis(analysis);
+                } catch (analysisError) {
+                    console.error('Mistake analysis error:', analysisError);
                 }
-            });
-
-            setQuizResult({
-                totalQuestions: questions.length,
-                correctAnswers: correctCount,
-                wrongAnswers: questions.length - correctCount,
-                wrongAnswersList: []
-            });
-            setShowResults(true);
-        }
-    };
-
-    const analyzeMistakes = async () => {
-        if (!quizResult || !quizResult.wrongAnswersList.length) {
-            return;
-        }
-
-        setIsAnalyzing(true);
-        try {
-            console.log('Analyzing mistakes...');
-            const analysis = await chatService.analyzeMistakes(quizResult.wrongAnswersList);
-            setMistakeAnalysis(analysis.analysis);
+            }
         } catch (error) {
-            console.error('Mistake analysis failed:', error);
-            setMistakeAnalysis('Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+            console.error('Quiz evaluation error:', error);
+            const manualResult = calculateManualResults();
+            setQuizResult(manualResult);
+            setShowResults(true);
         } finally {
             setIsAnalyzing(false);
         }
+    };
+
+    const calculateManualResults = () => {
+        let correct = 0;
+        const wrongAnswers = [];
+
+        questions.forEach((question, index) => {
+            const userAnswer = selectedAnswers[index];
+            if (userAnswer === question.correctAnswer) {
+                correct++;
+            } else {
+                wrongAnswers.push({
+                    question: question.question,
+                    userAnswer: question.options[userAnswer] || 'No answer provided',
+                    correctAnswer: question.options[question.correctAnswer],
+                    explanation: question.explanation
+                });
+            }
+        });
+
+        return {
+            score: correct,
+            totalQuestions: questions.length,
+            percentage: Math.round((correct / questions.length) * 100),
+            wrongAnswers: wrongAnswers
+        };
     };
 
     const restartQuiz = () => {
@@ -178,24 +168,22 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         setShowResults(false);
         setQuizResult(null);
         setMistakeAnalysis(null);
+        generateQuiz();
     };
 
     if (isGenerating) {
         return (
             <div className="min-h-screen flex items-center justify-center">
-                <div className="text-center animate-fade-in">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                        <div className="w-8 h-8 border-3 border-green-600 border-t-transparent rounded-full animate-spin"></div>
+                <div className="text-center">
+                    <div className="w-16 h-16 mx-auto mb-6">
+                        <div className="w-full h-full border-4 border-indigo-300/30 border-t-indigo-400 rounded-full animate-spin"></div>
                     </div>
-                    <h2 className="text-2xl font-bold text-gray-800 mb-2">Sorular Oluşturuluyor...</h2>
-                    <p className="text-gray-600">Dokümanınızdan test soruları hazırlanıyor</p>
-                    <div className="mt-6">
-                        <div className="loading-dots flex justify-center space-x-1">
-                            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                            <span className="w-3 h-3 bg-green-500 rounded-full"></span>
-                        </div>
-                    </div>
+                    <h2 className="text-2xl font-semibold text-indigo-100 mb-2">
+                        Preparing Quiz
+                    </h2>
+                    <p className="text-indigo-300">
+                        Generating questions from your document<span className="loading-dots"></span>
+                    </p>
                 </div>
             </div>
         );
@@ -203,211 +191,259 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
 
     if (showResults) {
         return (
-            <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="max-w-6xl w-full text-center animate-fade-in">
-                    {/* Test Sonuçları Header */}
-                    <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6
-            ${quizResult.correctAnswers >= quizResult.totalQuestions * 0.7 ? 'bg-green-100' :
-                        quizResult.correctAnswers >= quizResult.totalQuestions * 0.5 ? 'bg-yellow-100' : 'bg-red-100'}`}>
-                        <span className={`text-3xl font-bold
-              ${quizResult.correctAnswers >= quizResult.totalQuestions * 0.7 ? 'text-green-600' :
-                            quizResult.correctAnswers >= quizResult.totalQuestions * 0.5 ? 'text-yellow-600' : 'text-red-600'}`}>
-                            {Math.round((quizResult.correctAnswers / quizResult.totalQuestions) * 100)}%
-                        </span>
-                    </div>
-
-                    <h2 className="text-3xl font-bold text-gray-800 mb-4">Test Tamamlandı!</h2>
-                    <p className="text-xl text-gray-600 mb-8">
-                        {quizResult.totalQuestions} sorudan {quizResult.correctAnswers} tanesini doğru yanıtladınız
-                    </p>
-
-                    {/* Yanlış Sorular Tablosu */}
-                    {quizResult.wrongAnswersList && quizResult.wrongAnswersList.length > 0 && (
-                        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-                            <h3 className="text-2xl font-bold text-gray-800 mb-4">Yanlış Yanıtlanan Sorular</h3>
-                            <div className="overflow-x-auto">
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                    <tr className="bg-gray-50">
-                                        <th className="border px-4 py-3 text-left font-semibold">Soru No</th>
-                                        <th className="border px-4 py-3 text-left font-semibold">Soru</th>
-                                        <th className="border px-4 py-3 text-left font-semibold">Doğru Cevap</th>
-                                        <th className="border px-4 py-3 text-left font-semibold">Verdiğiniz Cevap</th>
-                                    </tr>
-                                    </thead>
-                                    <tbody>
-                                    {quizResult.wrongAnswersList.map((wrongAnswer, index) => (
-                                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                            <td className="border px-4 py-3 font-medium text-center">
-                                                {wrongAnswer.questionNumber}
-                                            </td>
-                                            <td className="border px-4 py-3">
-                                                <div className="max-w-md">
-                                                    {wrongAnswer.questionText}
-                                                </div>
-                                            </td>
-                                            <td className="border px-4 py-3">
-                                                    <span className="text-green-700 font-medium">
-                                                        {wrongAnswer.correctAnswer}
-                                                    </span>
-                                            </td>
-                                            <td className="border px-4 py-3">
-                                                    <span className="text-red-700 font-medium">
-                                                        {wrongAnswer.studentAnswer}
-                                                    </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Yapay Zeka Analizi Butonu */}
-                            <div className="mt-6">
-                                <button
-                                    onClick={analyzeMistakes}
-                                    disabled={isAnalyzing}
-                                    className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center mx-auto"
-                                >
-                                    {isAnalyzing ? (
-                                        <>
-                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                                            Analiz ediliyor...
-                                        </>
-                                    ) : (
-                                        <>
-                                            🤖 Yanlışlarını Yapay Zeka ile Analiz Et
-                                        </>
-                                    )}
-                                </button>
-                            </div>
-
-                            {/* Analiz Sonucu */}
-                            {mistakeAnalysis && (
-                                <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-6">
-                                    <h4 className="text-xl font-bold text-purple-800 mb-3">🧠 Yapay Zeka Analizi</h4>
-                                    <div className="text-left text-gray-800 whitespace-pre-line">
-                                        {mistakeAnalysis}
-                                    </div>
-                                </div>
-                            )}
+            <div className="min-h-screen p-6">
+                {/* Header */}
+                <div className="glass-effect border-b border-indigo-400/30 p-4 backdrop-blur-xl mb-8">
+                    <div className="max-w-4xl mx-auto flex items-center justify-between">
+                        <div className="flex items-center">
+                            <button
+                                onClick={onBack}
+                                className="mr-4 p-2 hover:bg-indigo-500/20 rounded-full transition-all duration-300 text-indigo-200 hover:text-white"
+                            >
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                                </svg>
+                            </button>
+                            <h1 className="text-xl font-bold text-indigo-100">Quiz Results</h1>
                         </div>
-                    )}
+                        <button onClick={onStartOver} className="btn-secondary text-sm">
+                            New Document
+                        </button>
+                    </div>
+                </div>
 
-                    {/* Tebrik Mesajı - Hiç Yanlış Yoksa */}
-                    {quizResult.wrongAnswersList && quizResult.wrongAnswersList.length === 0 && (
-                        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
-                            <h3 className="text-2xl font-bold text-green-800 mb-2">🎉 Mükemmel Performans!</h3>
-                            <p className="text-green-700">
-                                Tüm soruları doğru yanıtladınız! Dokümanı çok iyi öğrenmişsiniz.
+                <div className="max-w-4xl mx-auto">
+                    {/* Score Card */}
+                    <div className="card p-8 mb-8 text-center neon-glow">
+                        <div className="mb-6">
+                            <div className={`w-24 h-24 mx-auto rounded-full flex items-center justify-center text-3xl font-bold mb-4 ${
+                                quizResult.percentage >= 80 ? 'bg-green-500/20 text-green-400 border border-green-400/30' :
+                                    quizResult.percentage >= 60 ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-400/30' :
+                                        'bg-red-500/20 text-red-400 border border-red-400/30'
+                            }`}>
+                                {quizResult.percentage}%
+                            </div>
+                            <h2 className="text-2xl font-bold text-indigo-100 mb-2">
+                                Quiz Completed!
+                            </h2>
+                            <p className="text-lg text-indigo-300">
+                                {quizResult.score} / {quizResult.totalQuestions} correct answers
                             </p>
                         </div>
+
+                        <div className="flex justify-center space-x-4">
+                            <button onClick={restartQuiz} className="btn-primary">
+                                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                                New Quiz
+                            </button>
+                            <button onClick={onBack} className="btn-secondary">
+                                Go Back
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Wrong Answers */}
+                    {quizResult.wrongAnswers && quizResult.wrongAnswers.length > 0 && (
+                        <div className="card p-6 mb-8">
+                            <h3 className="text-xl font-semibold text-indigo-100 mb-4 flex items-center">
+                                <svg className="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Incorrect Answers
+                            </h3>
+                            <div className="space-y-4">
+                                {quizResult.wrongAnswers.map((mistake, index) => (
+                                    <div key={index} className="glass-effect p-4 rounded-xl border border-red-400/30">
+                                        <p className="font-medium text-indigo-100 mb-2">{mistake.question}</p>
+                                        <div className="text-sm space-y-1">
+                                            <p className="text-red-300">
+                                                <span className="font-medium">Your answer:</span> {mistake.userAnswer}
+                                            </p>
+                                            <p className="text-green-300">
+                                                <span className="font-medium">Correct answer:</span> {mistake.correctAnswer}
+                                            </p>
+                                            {mistake.explanation && (
+                                                <p className="text-indigo-300 mt-2">{mistake.explanation}</p>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     )}
 
-                    {/* Aksiyon Butonları */}
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <button
-                            onClick={restartQuiz}
-                            className="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition-colors"
-                        >
-                            Testi Tekrarla
-                        </button>
-                        <button
-                            onClick={onBack}
-                            className="bg-gray-600 text-white px-6 py-3 rounded-lg hover:bg-gray-700 transition-colors"
-                        >
-                            Geri Dön
-                        </button>
-                        <button
-                            onClick={onStartOver}
-                            className="text-gray-500 hover:text-gray-700 underline"
-                        >
-                            Yeni doküman
-                        </button>
-                    </div>
+                    {/* AI Analysis */}
+                    {mistakeAnalysis && (
+                        <div className="card p-6">
+                            <h3 className="text-xl font-semibold text-indigo-100 mb-4 flex items-center">
+                                <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                                </svg>
+                                AI Analysis
+                            </h3>
+                            <div className="glass-effect p-4 rounded-xl border border-blue-400/30">
+                                <p className="text-indigo-200 leading-relaxed">{mistakeAnalysis}</p>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     }
 
     const currentQuestion = questions[currentQuestionIndex];
-    const selectedAnswer = selectedAnswers[currentQuestionIndex];
+    const isLastQuestion = currentQuestionIndex === questions.length - 1;
+    const answeredQuestions = Object.keys(selectedAnswers).length;
+    const allQuestionsAnswered = answeredQuestions === questions.length;
 
     return (
         <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <div className="bg-white shadow-lg p-4">
+            <div className="glass-effect border-b border-indigo-400/30 p-4 backdrop-blur-xl">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center">
                         <button
                             onClick={onBack}
-                            className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            className="mr-4 p-2 hover:bg-indigo-500/20 rounded-full transition-all duration-300 text-indigo-200 hover:text-white"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-800">Çoktan Seçmeli Test</h1>
-                            <p className="text-sm text-gray-600">{document.name}</p>
+                            <h1 className="text-xl font-bold text-indigo-100 flex items-center">
+                                <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                                </svg>
+                                Quiz
+                            </h1>
+                            <p className="text-sm text-indigo-300">{document.name}</p>
                         </div>
                     </div>
-                    <div className="text-sm text-gray-600">
-                        {currentQuestionIndex + 1} / {questions.length}
+                    <button onClick={onStartOver} className="btn-secondary text-sm">
+                        New Document
+                    </button>
+                </div>
+            </div>
+
+            {/* Progress */}
+            <div className="glass-effect border-b border-indigo-400/30 p-4">
+                <div className="max-w-4xl mx-auto">
+                    <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-indigo-300">
+                            Question {currentQuestionIndex + 1} / {questions.length}
+                        </span>
+                        <span className="text-sm text-indigo-300">
+                            {answeredQuestions} answered
+                        </span>
+                    </div>
+                    <div className="w-full bg-indigo-900/30 rounded-full h-2">
+                        <div
+                            className="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+                        ></div>
                     </div>
                 </div>
             </div>
 
-            {/* Progress Bar */}
-            <div className="bg-gray-200 h-2">
-                <div
-                    className="bg-green-600 h-2 transition-all duration-300"
-                    style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
-                ></div>
-            </div>
-
             {/* Question */}
-            <div className="flex-1 flex items-center justify-center p-4">
-                <div className="max-w-3xl w-full animate-slide-up">
-                    <div className="bg-white rounded-xl shadow-lg p-8">
-                        <h2 className="text-2xl font-bold text-gray-800 mb-8">
-                            {currentQuestion?.question}
+            <div className="flex-1 p-6">
+                <div className="max-w-4xl mx-auto">
+                    <div className="card p-8 mb-8">
+                        <h2 className="text-xl md:text-2xl font-semibold text-indigo-100 mb-6 leading-relaxed">
+                            {currentQuestion.question}
                         </h2>
 
-                        <div className="space-y-4">
-                            {currentQuestion?.options.map((option, index) => (
+                        <div className="space-y-3">
+                            {currentQuestion.options.map((option, index) => (
                                 <button
                                     key={index}
                                     onClick={() => handleAnswerSelect(index)}
-                                    className={`w-full text-left p-4 rounded-lg border-2 transition-all duration-200
-                    ${selectedAnswer === index
-                                        ? 'border-green-500 bg-green-50 text-green-800'
-                                        : 'border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:bg-gray-50'
+                                    className={`
+                                        w-full p-4 text-left rounded-xl border-2 transition-all duration-300
+                                        ${selectedAnswers[currentQuestionIndex] === index
+                                        ? 'border-indigo-400 bg-indigo-500/20 text-white shadow-lg neon-glow'
+                                        : 'border-indigo-400/30 bg-white/5 text-indigo-200 hover:border-indigo-400/50 hover:bg-indigo-500/10'
                                     }
-                  `}
+                                    `}
                                 >
-                                    {option}
+                                    <span className="block text-sm md:text-base">{option}</span>
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Navigation */}
+                    <div className="flex justify-between items-center">
+                        <button
+                            onClick={prevQuestion}
+                            disabled={currentQuestionIndex === 0}
+                            className={`
+                                btn-secondary ${currentQuestionIndex === 0 ? 'opacity-50 cursor-not-allowed' : ''}
+                            `}
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Previous
+                        </button>
+
+                        <div className="flex space-x-2">
+                            {questions.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => setCurrentQuestionIndex(index)}
+                                    className={`
+                                        w-8 h-8 rounded-full text-sm font-medium transition-all duration-300
+                                        ${index === currentQuestionIndex
+                                        ? 'bg-indigo-500 text-white shadow-lg'
+                                        : selectedAnswers[index] !== undefined
+                                            ? 'bg-green-500/30 text-green-300 border border-green-400/30'
+                                            : 'bg-white/10 text-indigo-300 border border-indigo-400/30'
+                                    }
+                                    `}
+                                >
+                                    {index + 1}
                                 </button>
                             ))}
                         </div>
 
-                        <div className="flex justify-between mt-8">
+                        {isLastQuestion ? (
                             <button
-                                onClick={handlePrevious}
-                                disabled={currentQuestionIndex === 0}
-                                className="px-6 py-2 text-gray-600 hover:text-gray-800 disabled:text-gray-400 disabled:cursor-not-allowed"
+                                onClick={finishQuiz}
+                                disabled={!allQuestionsAnswered || isAnalyzing}
+                                className={`
+                                    btn-primary ${!allQuestionsAnswered ? 'opacity-50 cursor-not-allowed' : ''}
+                                `}
                             >
-                                ← Önceki
+                                {isAnalyzing ? (
+                                    <>
+                                        <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Evaluating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                        </svg>
+                                        Finish
+                                    </>
+                                )}
                             </button>
-
+                        ) : (
                             <button
-                                onClick={handleNext}
-                                disabled={selectedAnswer === undefined}
-                                className="bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                                onClick={nextQuestion}
+                                disabled={currentQuestionIndex === questions.length - 1}
+                                className="btn-secondary"
                             >
-                                {currentQuestionIndex === questions.length - 1 ? 'Bitir' : 'Sonraki →'}
+                                Next
+                                <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
                             </button>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

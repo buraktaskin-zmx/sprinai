@@ -6,25 +6,53 @@ module.exports = {
     theme: {
         extend: {
             animation: {
-                'fade-in': 'fadeIn 0.5s ease-in-out',
-                'slide-up': 'slideUp 0.3s ease-out',
-                'bounce-dots': 'bounceDots 1.4s infinite ease-in-out',
+                'pulse': 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                'bounce': 'bounce 1s infinite',
+                'spin': 'spin 1s linear infinite',
+                'float': 'float 6s ease-in-out infinite',
+                'slide': 'slide 2s infinite',
             },
             keyframes: {
-                fadeIn: {
-                    '0%': { opacity: '0' },
-                    '100%': { opacity: '1' },
+                float: {
+                    '0%, 100%': { transform: 'translateY(0px)' },
+                    '50%': { transform: 'translateY(-20px)' },
                 },
-                slideUp: {
-                    '0%': { transform: 'translateY(20px)', opacity: '0' },
-                    '100%': { transform: 'translateY(0)', opacity: '1' },
-                },
-                bounceDots: {
-                    '0%, 80%, 100%': { transform: 'scale(0)' },
-                    '40%': { transform: 'scale(1)' },
+                slide: {
+                    '0%': { left: '-100%' },
+                    '100%': { left: '100%' },
                 }
+            },
+            perspective: {
+                '1000': '1000px',
+            },
+            transformStyle: {
+                'preserve-3d': 'preserve-3d',
+            },
+            backfaceVisibility: {
+                'hidden': 'hidden',
+            },
+            rotate: {
+                'y-180': 'rotateY(180deg)',
             }
         },
     },
-    plugins: [],
+    plugins: [
+        function({ addUtilities }) {
+            const newUtilities = {
+                '.perspective-1000': {
+                    perspective: '1000px',
+                },
+                '.transform-style-preserve-3d': {
+                    transformStyle: 'preserve-3d',
+                },
+                '.backface-hidden': {
+                    backfaceVisibility: 'hidden',
+                },
+                '.rotate-y-180': {
+                    transform: 'rotateY(180deg)',
+                }
+            }
+            addUtilities(newUtilities)
+        }
+    ],
 }

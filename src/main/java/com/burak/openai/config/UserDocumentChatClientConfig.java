@@ -29,7 +29,6 @@ public class UserDocumentChatClientConfig {
 	                                         ChatMemory chatMemory,
 	                                         VectorStore vectorStore) {
 		
-//		Advisor loggerAdvisor = new SimpleLoggerAdvisor();
 		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		
 		// Create RAG advisor with improved configuration
@@ -44,7 +43,7 @@ public class UserDocumentChatClientConfig {
 		
 		// Chat options for better quiz generation
 		ChatOptions chatOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")  // GPT-4 kullan
+			.model("gpt-4")  // GPT-4 kullan
 			.temperature(0.8)  // Düşük temperature ile daha tutarlı sonuçlar
 			.build();
 		

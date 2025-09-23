@@ -21,7 +21,7 @@ public class QuizResultController {
 	
 	private final ChatClient chatClient;
 	
-	public QuizResultController(@Qualifier("userDocumentChatClient") ChatClient chatClient) {
+	public QuizResultController(@Qualifier("quizChatClient") ChatClient chatClient) {
 		this.chatClient = chatClient;
 	}
 	

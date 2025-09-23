@@ -1,9 +1,8 @@
-// frontend/src/components/FlashCardInterface.js
 import React, { useState } from 'react';
 import { chatService } from '../services/api';
 
 const FlashCardInterface = ({ document, onBack, onStartOver }) => {
-    const [currentView, setCurrentView] = useState('chat'); // 'chat' or 'cards'
+    const [currentView, setCurrentView] = useState('chat');
     const [message, setMessage] = useState('');
     const [isGenerating, setIsGenerating] = useState(false);
     const [flashcards, setFlashcards] = useState([]);
@@ -11,11 +10,21 @@ const FlashCardInterface = ({ document, onBack, onStartOver }) => {
     const [isFlipped, setIsFlipped] = useState(false);
     const [chatHistory, setChatHistory] = useState([]);
 
+    // Welcome message
+    React.useEffect(() => {
+        const welcomeMessage = {
+            id: Date.now(),
+            text: `Hello! ${document.name} is ready. Specify which topics you'd like to create flashcards from. For example: "Create flashcards from main topics" or "Make cards from key definitions"`,
+            sender: 'bot',
+            timestamp: new Date()
+        };
+        setChatHistory([welcomeMessage]);
+    }, [document.name]);
+
     const handleGenerateFlashCards = async (e) => {
         e.preventDefault();
         if (!message.trim() || isGenerating) return;
 
-        // Add user message to chat
         const userMessage = {
             id: Date.now(),
             text: message,
@@ -48,7 +57,7 @@ const FlashCardInterface = ({ document, onBack, onStartOver }) => {
             } else {
                 const errorMessage = {
                     id: Date.now() + 1,
-                    text: 'FlashCard oluşturulamadı. Lütfen talebinizi daha detaylı yazın.',
+                    text: 'FlashCards could not be created. Please provide more detailed instructions.',
                     sender: 'bot',
                     timestamp: new Date()
                 };
@@ -57,7 +66,7 @@ const FlashCardInterface = ({ document, onBack, onStartOver }) => {
         } catch (error) {
             const errorMessage = {
                 id: Date.now() + 1,
-                text: 'FlashCard oluşturulurken hata oluştu. Lütfen tekrar deneyin.',
+                text: 'An error occurred while creating flashcards. Please try again.',
                 sender: 'bot',
                 timestamp: new Date()
             };
@@ -89,89 +98,77 @@ const FlashCardInterface = ({ document, onBack, onStartOver }) => {
         setIsFlipped(false);
     };
 
+    const formatTime = (timestamp) => {
+        return new Date(timestamp).toLocaleTimeString('en-US', {
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    };
+
     if (currentView === 'chat') {
         return (
             <div className="min-h-screen flex flex-col">
                 {/* Header */}
-                <div className="bg-white shadow-lg p-4">
+                <div className="glass-effect border-b border-indigo-400/30 p-4 backdrop-blur-xl">
                     <div className="max-w-4xl mx-auto flex items-center justify-between">
                         <div className="flex items-center">
                             <button
                                 onClick={onBack}
-                                className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                                className="mr-4 p-2 hover:bg-indigo-500/20 rounded-full transition-all duration-300 text-indigo-200 hover:text-white"
                             >
                                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                                 </svg>
                             </button>
                             <div>
-                                <h1 className="text-xl font-bold text-gray-800">FlashCard Oluşturucu</h1>
-                                <p className="text-sm text-gray-600">{document.name}</p>
+                                <h1 className="text-xl font-bold text-indigo-100 flex items-center">
+                                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                    </svg>
+                                    FlashCard Creator
+                                </h1>
+                                <p className="text-sm text-indigo-300">{document.name}</p>
                             </div>
                         </div>
-                        <button
-                            onClick={onStartOver}
-                            className="text-sm text-gray-500 hover:text-gray-700 underline"
-                        >
-                            Yeni doküman
+                        <button onClick={onStartOver} className="btn-secondary text-sm">
+                            New Document
                         </button>
                     </div>
                 </div>
 
-                {/* Chat Messages */}
+                {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto p-4">
-                    <div className="max-w-4xl mx-auto">
-                        {chatHistory.length === 0 && (
-                            <div className="text-center text-gray-500 mt-12">
-                                <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                                    <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
-                                    </svg>
-                                </div>
-                                <p className="mb-4">Merhaba! {document.name} dokümanından nasıl bir flashcard seti oluşturmamı istiyorsunuz?</p>
-                                <div className="text-sm text-gray-400 space-y-2">
-                                    <p><strong>Örnekler:</strong></p>
-                                    <p>• "Matematik formüllerini içeren flashcard'lar oluştur"</p>
-                                    <p>• "İngilizce kelimeler ve Türkçe anlamları"</p>
-                                    <p>• "Tarihsel olaylar ve tarihleri"</p>
-                                    <p>• "Kavramlar ve tanımları"</p>
-                                </div>
-                            </div>
-                        )}
-
+                    <div className="max-w-4xl mx-auto space-y-4">
                         {chatHistory.map((msg) => (
-                            <div
-                                key={msg.id}
-                                className={`mb-6 flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
-                            >
+                            <div key={msg.id} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
                                 <div className={`
-                                    max-w-xs lg:max-w-md px-4 py-3 rounded-lg shadow-sm
+                                    max-w-xs lg:max-w-2xl px-4 py-3 rounded-2xl shadow-lg backdrop-blur-sm
                                     ${msg.sender === 'user'
-                                    ? 'bg-purple-600 text-white rounded-br-none'
-                                    : 'bg-white text-gray-800 rounded-bl-none border'
+                                    ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white'
+                                    : 'bg-white/10 border border-indigo-400/30 text-indigo-100'
                                 }
                                 `}>
-                                    <p className="text-sm">{msg.text}</p>
-                                    <p className={`text-xs mt-1 ${msg.sender === 'user' ? 'text-purple-100' : 'text-gray-500'}`}>
-                                        {new Date(msg.timestamp).toLocaleTimeString('tr-TR', {
-                                            hour: '2-digit',
-                                            minute: '2-digit'
-                                        })}
-                                    </p>
+                                    <div className="text-sm md:text-base leading-relaxed">
+                                        {msg.text}
+                                    </div>
+                                    <div className={`text-xs mt-2 ${msg.sender === 'user' ? 'text-indigo-200' : 'text-indigo-400'}`}>
+                                        {formatTime(msg.timestamp)}
+                                    </div>
                                 </div>
                             </div>
                         ))}
 
+                        {/* Loading */}
                         {isGenerating && (
-                            <div className="mb-6 flex justify-start">
-                                <div className="bg-white rounded-lg rounded-bl-none px-4 py-3 border shadow-sm">
-                                    <div className="flex items-center space-x-2">
-                                        <div className="loading-dots flex space-x-1">
-                                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
-                                            <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                            <div className="flex justify-start">
+                                <div className="px-4 py-3 rounded-2xl shadow-lg backdrop-blur-sm bg-white/10 border border-indigo-400/30">
+                                    <div className="flex items-center space-x-2 text-indigo-300">
+                                        <div className="flex space-x-1">
+                                            <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce"></div>
+                                            <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.1s'}}></div>
+                                            <div className="w-2 h-2 bg-indigo-400 rounded-full animate-bounce" style={{animationDelay: '0.2s'}}></div>
                                         </div>
-                                        <span className="text-sm text-gray-600">FlashCard'lar oluşturuluyor...</span>
+                                        <span className="text-sm">Creating flashcards...</span>
                                     </div>
                                 </div>
                             </div>
@@ -179,147 +176,177 @@ const FlashCardInterface = ({ document, onBack, onStartOver }) => {
                     </div>
                 </div>
 
-                {/* Input */}
-                <div className="bg-white border-t p-4">
-                    <div className="max-w-4xl mx-auto">
-                        <form onSubmit={handleGenerateFlashCards} className="flex space-x-3">
+                {/* Input Area */}
+                <div className="glass-effect border-t border-indigo-400/30 p-4 backdrop-blur-xl">
+                    <form onSubmit={handleGenerateFlashCards} className="max-w-4xl mx-auto">
+                        <div className="flex space-x-4">
                             <input
                                 type="text"
                                 value={message}
                                 onChange={(e) => setMessage(e.target.value)}
-                                placeholder="Nasıl bir FlashCard seti istiyorsunuz? (örn: matematik formülleri, kelime çevirileri...)"
+                                placeholder="What topics would you like to create flashcards from?"
                                 disabled={isGenerating}
-                                className="flex-1 border border-gray-300 rounded-lg px-4 py-2 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent disabled:bg-gray-100"
+                                className="flex-1 input-field"
                             />
                             <button
                                 type="submit"
                                 disabled={isGenerating || !message.trim()}
-                                className="bg-purple-600 text-white px-6 py-2 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                                className={`
+                                    px-6 py-3 rounded-xl font-semibold transition-all duration-300
+                                    ${isGenerating || !message.trim()
+                                    ? 'bg-gray-600/30 text-gray-400 cursor-not-allowed'
+                                    : 'btn-primary hover:scale-105'
+                                }
+                                `}
                             >
-                                Oluştur
+                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                                </svg>
                             </button>
-                        </form>
-                    </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         );
     }
 
     // FlashCard View
+    const currentCard = flashcards[currentCardIndex];
+
     return (
-        <div className="min-h-screen flex flex-col bg-gradient-to-br from-purple-50 to-indigo-100">
+        <div className="min-h-screen flex flex-col">
             {/* Header */}
-            <div className="bg-white shadow-lg p-4">
+            <div className="glass-effect border-b border-indigo-400/30 p-4 backdrop-blur-xl">
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center">
                         <button
                             onClick={backToChat}
-                            className="mr-4 p-2 hover:bg-gray-100 rounded-full transition-colors"
+                            className="mr-4 p-2 hover:bg-indigo-500/20 rounded-full transition-all duration-300 text-indigo-200 hover:text-white"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
                         </button>
                         <div>
-                            <h1 className="text-xl font-bold text-gray-800">FlashCard Çalışması</h1>
-                            <p className="text-sm text-gray-600">{currentCardIndex + 1} / {flashcards.length}</p>
+                            <h1 className="text-xl font-bold text-indigo-100">FlashCards</h1>
+                            <p className="text-sm text-indigo-300">
+                                {currentCardIndex + 1} / {flashcards.length}
+                            </p>
                         </div>
                     </div>
-                    <div className="flex items-center space-x-4">
-                        <button
-                            onClick={backToChat}
-                            className="text-sm text-purple-600 hover:text-purple-700 underline"
-                        >
-                            Yeni FlashCard Oluştur
-                        </button>
-                        <button
-                            onClick={onStartOver}
-                            className="text-sm text-gray-500 hover:text-gray-700 underline"
-                        >
-                            Yeni doküman
-                        </button>
+                    <button onClick={onStartOver} className="btn-secondary text-sm">
+                        New Document
+                    </button>
+                </div>
+            </div>
+
+            {/* Progress */}
+            <div className="glass-effect border-b border-indigo-400/30 p-4">
+                <div className="max-w-4xl mx-auto">
+                    <div className="w-full bg-indigo-900/30 rounded-full h-2">
+                        <div
+                            className="bg-gradient-to-r from-indigo-500 to-blue-500 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${((currentCardIndex + 1) / flashcards.length) * 100}%` }}
+                        ></div>
                     </div>
                 </div>
             </div>
 
             {/* FlashCard */}
-            <div className="flex-1 flex items-center justify-center p-4">
+            <div className="flex-1 flex items-center justify-center p-6">
                 <div className="max-w-2xl w-full">
-                    <div className="relative">
+                    <div className="relative h-96 perspective-1000">
                         <div
-                            className={`flashcard ${isFlipped ? 'flipped' : ''}`}
                             onClick={flipCard}
+                            className={`
+                                absolute inset-0 w-full h-full cursor-pointer transition-transform duration-700 transform-style-preserve-3d
+                                ${isFlipped ? 'rotate-y-180' : ''}
+                            `}
                         >
-                            <div className="flashcard-inner">
-                                <div className="flashcard-front">
-                                    <div className="text-center p-8">
-                                        <div className="text-sm text-purple-600 font-semibold mb-4">ÖN YÜZ</div>
-                                        <div className="text-2xl font-bold text-gray-800 mb-6">
-                                            {flashcards[currentCardIndex]?.front}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Kartı çevirmek için tıklayın
-                                        </div>
+                            {/* Front */}
+                            <div className="absolute inset-0 backface-hidden glass-effect rounded-2xl p-8 flex items-center justify-center neon-glow">
+                                <div className="text-center">
+                                    <div className="mb-4 text-indigo-300">
+                                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
                                     </div>
+                                    <h2 className="text-xl md:text-2xl font-semibold text-indigo-100 leading-relaxed">
+                                        {currentCard.front}
+                                    </h2>
+                                    <p className="text-indigo-300 text-sm mt-4">Click to flip the card</p>
                                 </div>
-                                <div className="flashcard-back">
-                                    <div className="text-center p-8">
-                                        <div className="text-sm text-green-600 font-semibold mb-4">ARKA YÜZ</div>
-                                        <div className="text-xl text-gray-800 mb-6">
-                                            {flashcards[currentCardIndex]?.back}
-                                        </div>
-                                        <div className="text-sm text-gray-500">
-                                            Kartı çevirmek için tıklayın
-                                        </div>
+                            </div>
+
+                            {/* Back */}
+                            <div className="absolute inset-0 backface-hidden rotate-y-180 glass-effect rounded-2xl p-8 flex items-center justify-center border border-green-400/30">
+                                <div className="text-center">
+                                    <div className="mb-4 text-green-400">
+                                        <svg className="w-8 h-8 mx-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                        </svg>
                                     </div>
+                                    <h2 className="text-lg md:text-xl text-green-300 leading-relaxed">
+                                        {currentCard.back}
+                                    </h2>
+                                    <p className="text-indigo-300 text-sm mt-4">Click to flip the card</p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
                     {/* Navigation */}
-                    <div className="flex justify-center space-x-6 mt-8">
+                    <div className="flex justify-between items-center mt-8">
                         <button
                             onClick={prevCard}
+                            className="btn-secondary"
                             disabled={flashcards.length <= 1}
-                            className="flex items-center px-6 py-3 bg-white rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                             </svg>
-                            Önceki
+                            Previous
                         </button>
 
-                        <button
-                            onClick={flipCard}
-                            className="flex items-center px-6 py-3 bg-purple-600 text-white rounded-lg shadow-md hover:shadow-lg hover:bg-purple-700 transition-all"
-                        >
-                            <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            Çevir
-                        </button>
+                        <div className="flex space-x-2">
+                            {flashcards.map((_, index) => (
+                                <button
+                                    key={index}
+                                    onClick={() => {
+                                        setCurrentCardIndex(index);
+                                        setIsFlipped(false);
+                                    }}
+                                    className={`
+                                        w-3 h-3 rounded-full transition-all duration-300
+                                        ${index === currentCardIndex
+                                        ? 'bg-indigo-500 shadow-lg'
+                                        : 'bg-indigo-700/30 hover:bg-indigo-600/50'
+                                    }
+                                    `}
+                                />
+                            ))}
+                        </div>
 
                         <button
                             onClick={nextCard}
+                            className="btn-secondary"
                             disabled={flashcards.length <= 1}
-                            className="flex items-center px-6 py-3 bg-white rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                         >
-                            Sonraki
-                            <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            Next
+                            <svg className="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
                         </button>
                     </div>
 
-                    {/* Progress Bar */}
-                    <div className="mt-6">
-                        <div className="bg-white rounded-full p-1 shadow-inner">
-                            <div
-                                className="bg-purple-600 h-2 rounded-full transition-all duration-300"
-                                style={{ width: `${((currentCardIndex + 1) / flashcards.length) * 100}%` }}
-                            ></div>
-                        </div>
+                    {/* Actions */}
+                    <div className="text-center mt-8">
+                        <button
+                            onClick={backToChat}
+                            className="btn-secondary"
+                        >
+                            Create New FlashCards
+                        </button>
                     </div>
                 </div>
             </div>

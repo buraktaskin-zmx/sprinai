@@ -30,22 +30,21 @@ public class QuizChatClientConfig {
 	@Bean("quizChatClient")
 	public ChatClient quizChatClient(ChatClient.Builder chatClientBuilder) {
 		
-		// Advisors - Chat Memory KULLANMIYORUZ (token tasarrufu için)
 		
-		
-		// Quiz için özel RAG advisor - daha fazla doküman, düşük threshold
 		var quizRAGAdvisor = RetrievalAugmentationAdvisor.builder()
 			.documentRetriever(UserDocumentRetriever.builder()
 				.vectorStore(vectorStore)
 				.topK(20)  // Quiz için daha fazla doküman
-				.similarityThreshold(0.3)  // Düşük threshold, daha fazla içerik
+				.similarityThreshold(0.5) //00.3  // Düşük threshold, daha
+				// fazla
+				// içerik
 				.build())
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
 		// Quiz için optimize edilmiş chat options
 		ChatOptions quizChatOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")  // Hızlı ve ekonomik
+			.model("gpt-4")  // Hızlı ve ekonomik
 			.temperature(0.1)        // Tutarlı JSON output için çok düşük
 			.maxTokens(2500)         // Response token limitini kontrol et
 			.topP(0.9)               // Daha deterministik sonuçlar
@@ -71,8 +70,8 @@ public class QuizChatClientConfig {
 		// Minimal token kullanımı için çok sınırlı options
 		ChatOptions fallbackOptions = ChatOptions.builder()
 			.model("gpt-3.5-turbo")
-			.temperature(0.0)        // Maximum deterministic
-			.maxTokens(1000)         // Çok düşük limit
+			.temperature(0.5)        // Maximum deterministic
+			.maxTokens(10000)         // Çok düşük limit
 			.topP(0.8)
 			.build();
 		
@@ -80,7 +79,7 @@ public class QuizChatClientConfig {
 			.defaultOptions(fallbackOptions)
 			.defaultSystem("""
                 You are a quiz generator. Create simple multiple choice questions in JSON format.
-                Use minimal tokens. Always return valid JSON structure.
+                Always return valid JSON structure.
                 """)
 			.build();
 	}
@@ -103,7 +102,7 @@ public class QuizChatClientConfig {
 		// İçerik özetleme için optimize options
 		ChatOptions contentOptions = ChatOptions.builder()
 			.model("gpt-3.5-turbo")
-			.temperature(0.2)
+			.temperature(0.5)
 			.maxTokens(1500)  // Özetler için yeterli
 			.build();
 		

@@ -19,7 +19,7 @@ public class FlashCardController {
 	private final ChatClient chatClient;
 	private final ObjectMapper objectMapper;
 	
-	public FlashCardController(@Qualifier("userDocumentChatClient") ChatClient chatClient,
+	public FlashCardController(@Qualifier("flashCardChatClient") ChatClient chatClient,
 	                           ObjectMapper objectMapper) {
 		this.chatClient = chatClient;
 		this.objectMapper = objectMapper;

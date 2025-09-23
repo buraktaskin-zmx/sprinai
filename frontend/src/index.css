@@ -1,75 +1,270 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss/base';
+@import 'tailwindcss/components';
+@import 'tailwindcss/utilities';
+
+@layer base {
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+
+    body {
+        font-family: 'Inter', 'Segoe UI', 'Roboto', sans-serif;
+        background: linear-gradient(135deg, #1e1b4b 0%, #1e3a8a 25%, #312e81 50%, #1e40af 75%, #3730a3 100%);
+        min-height: 100vh;
+        color: #f8fafc;
+        overflow-x: hidden;
+    }
+
+    /* Scrollbar Styling */
+    ::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    ::-webkit-scrollbar-track {
+        background: rgba(30, 27, 75, 0.3);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb {
+        background: linear-gradient(135deg, #3730a3, #1e40af);
+        border-radius: 4px;
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(135deg, #4338ca, #2563eb);
+    }
+}
 
 @layer components {
-    .loading-dots span {
-        animation: bounceDots 1.4s infinite ease-in-out;
+    .glass-effect {
+        background: rgba(255, 255, 255, 0.1);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.2);
+        box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
     }
 
-    .loading-dots span:nth-child(2) {
-        animation-delay: 0.2s;
+    .neon-glow {
+        box-shadow:
+                0 0 20px rgba(59, 130, 246, 0.3),
+                0 0 40px rgba(99, 102, 241, 0.2),
+                0 0 60px rgba(139, 92, 246, 0.1);
     }
 
-    .loading-dots span:nth-child(3) {
-        animation-delay: 0.4s;
-    }
-    /* frontend/src/index.css dosyasına eklenecek FlashCard stilleri */
-
-    /* FlashCard Animation Styles */
-    .flashcard {
-        width: 100%;
-        height: 300px;
-        perspective: 1000px;
-        cursor: pointer;
+    .pulse-animation {
+        animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
 
-    .flashcard-inner {
+    .gradient-text {
+        background: linear-gradient(135deg, #6366f1, #3b82f6, #8b5cf6);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .animated-border {
         position: relative;
-        width: 100%;
-        height: 100%;
-        text-align: center;
-        transition: transform 0.6s;
-        transform-style: preserve-3d;
-        border-radius: 15px;
-        box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        overflow: hidden;
     }
 
-    .flashcard.flipped .flashcard-inner {
-        transform: rotateY(180deg);
-    }
-
-    .flashcard-front, .flashcard-back {
+    .animated-border::before {
+        content: '';
         position: absolute;
+        top: 0;
+        left: -100%;
         width: 100%;
         height: 100%;
-        backface-visibility: hidden;
-        border-radius: 15px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
+        background: linear-gradient(90deg, transparent, rgba(59, 130, 246, 0.4), transparent);
+        animation: slide 2s infinite;
     }
 
-    .flashcard-front {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
+    @keyframes slide {
+        0% { left: -100%; }
+        100% { left: 100%; }
     }
 
-    .flashcard-back {
-        background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
-        color: white;
-        transform: rotateY(180deg);
+    .floating {
+        animation: floating 3s ease-in-out infinite;
     }
 
-    /* Responsive FlashCard */
-    @media (max-width: 768px) {
-        .flashcard {
-            height: 250px;
+    @keyframes floating {
+        0%, 100% { transform: translateY(0px); }
+        50% { transform: translateY(-10px); }
+    }
+
+    /* Opening Animation */
+    .page-enter {
+        animation: pageEnter 1.5s ease-out forwards;
+    }
+
+    .logo-animate {
+        animation: logoEnter 2s ease-out forwards;
+    }
+
+    .content-animate {
+        animation: contentSlideUp 1.8s ease-out 0.5s forwards;
+        opacity: 0;
+        transform: translateY(50px);
+    }
+
+    .feature-animate {
+        animation: featureSlideIn 1.5s ease-out forwards;
+        opacity: 0;
+        transform: translateX(-50px);
+    }
+
+    .feature-animate:nth-child(2) {
+        animation-delay: 0.8s;
+    }
+
+    .feature-animate:nth-child(3) {
+        animation-delay: 1.2s;
+    }
+
+    @keyframes pageEnter {
+        0% {
+            opacity: 0;
+            background-position: 0% 50%;
         }
-
-        .flashcard-front .text-2xl,
-        .flashcard-back .text-xl {
-            font-size: 1.25rem;
+        100% {
+            opacity: 1;
+            background-position: 100% 50%;
         }
+    }
+
+    @keyframes logoEnter {
+        0% {
+            opacity: 0;
+            transform: scale(0.5) rotate(-180deg);
+            filter: blur(10px);
+        }
+        60% {
+            transform: scale(1.1) rotate(0deg);
+            filter: blur(0px);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1) rotate(0deg);
+            filter: blur(0px);
+        }
+    }
+
+    @keyframes contentSlideUp {
+        0% {
+            opacity: 0;
+            transform: translateY(50px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes featureSlideIn {
+        0% {
+            opacity: 0;
+            transform: translateX(-50px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateX(0);
+        }
+    }
+
+    .btn-primary {
+        @apply px-6 py-3 bg-gradient-to-r from-indigo-600 to-blue-600 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 ease-out;
+    }
+
+    .btn-secondary {
+        @apply px-4 py-2 bg-gradient-to-r from-indigo-700/30 to-blue-700/30 backdrop-blur-sm border border-indigo-400/30 text-indigo-100 font-medium rounded-lg hover:bg-gradient-to-r hover:from-indigo-600/40 hover:to-blue-600/40 transition-all duration-300;
+    }
+
+    .input-field {
+        @apply w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-indigo-400/30 rounded-xl text-white placeholder-indigo-200/60 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all duration-300;
+    }
+
+    .card {
+        @apply glass-effect rounded-2xl p-6 transform hover:scale-105 transition-all duration-300;
+    }
+
+    .message-bubble {
+        @apply max-w-xs lg:max-w-md px-4 py-3 rounded-2xl shadow-lg backdrop-blur-sm;
+    }
+
+    .message-user {
+        @apply message-bubble bg-gradient-to-r from-indigo-600 to-blue-600 text-white ml-auto;
+    }
+
+    .message-bot {
+        @apply message-bubble bg-white/10 border border-indigo-400/30 text-indigo-100 mr-auto;
+    }
+}
+
+/* Particle Animation */
+.particles {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: -1;
+}
+
+.particle {
+    position: absolute;
+    width: 4px;
+    height: 4px;
+    background: linear-gradient(135deg, #6366f1, #3b82f6);
+    border-radius: 50%;
+    animation: float 6s ease-in-out infinite;
+    opacity: 0.7;
+}
+
+.particle:nth-child(odd) {
+    animation-delay: -2s;
+}
+
+.particle:nth-child(3n) {
+    animation-delay: -4s;
+}
+
+@keyframes float {
+    0%, 100% {
+        transform: translateY(0px) rotate(0deg);
+        opacity: 0.7;
+    }
+    50% {
+        transform: translateY(-100px) rotate(180deg);
+        opacity: 1;
+    }
+}
+
+/* Loading Animation */
+.loading-dots {
+    display: inline-block;
+}
+
+.loading-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .card {
+        @apply p-4;
+    }
+
+    .btn-primary {
+        @apply px-4 py-2 text-sm;
     }
 }

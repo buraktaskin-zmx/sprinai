@@ -8,6 +8,7 @@ import org.springframework.ai.chat.client.advisor.MessageChatMemoryAdvisor;
 import org.springframework.ai.chat.client.advisor.SimpleLoggerAdvisor;
 import org.springframework.ai.chat.client.advisor.api.Advisor;
 import org.springframework.ai.chat.memory.ChatMemory;
+import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor;
 import org.springframework.ai.vectorstore.VectorStore;
 import org.springframework.beans.factory.annotation.Value;
@@ -29,22 +30,28 @@ public class UserDocumentChatClientConfig {
 	                                         VectorStore vectorStore) {
 		
 		Advisor loggerAdvisor = new SimpleLoggerAdvisor();
-		Advisor tokenUsageAdvisor = new TokenUsageAuditAdvisor();
 		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		
-		// Create RAG advisor with simplified configuration
+		// Create RAG advisor with improved configuration
 		var userDocumentRAGAdvisor = RetrievalAugmentationAdvisor.builder()
 			.documentRetriever(UserDocumentRetriever.builder()
 				.vectorStore(vectorStore)
-				.topK(5)
-				.similarityThreshold(0.3)
+				.topK(10)  // Daha fazla doküman getir
+				.similarityThreshold(0.5)  // Threshold'u düşür
 				.build())
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
+		// Chat options for better quiz generation
+		ChatOptions chatOptions = ChatOptions.builder()
+			.model("gpt-3.5-turbo")  // GPT-4 kullan
+			.temperature(0.8)  // Düşük temperature ile daha tutarlı sonuçlar
+			.build();
+		
 		return chatClientBuilder
+			.defaultOptions(chatOptions)
 			.defaultSystem(userDocumentSystemTemplate)
-			.defaultAdvisors(List.of(loggerAdvisor, memoryAdvisor, tokenUsageAdvisor, userDocumentRAGAdvisor))
+			.defaultAdvisors(List.of(loggerAdvisor, memoryAdvisor, userDocumentRAGAdvisor))
 			.build();
 	}
 }

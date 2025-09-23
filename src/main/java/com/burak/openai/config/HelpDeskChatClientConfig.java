@@ -19,10 +19,10 @@ import java.util.List;
 
 @Configuration
 public class HelpDeskChatClientConfig {
-	
+
 	@Value("classpath:/promptTemplates/helpDeskSystemPromptTemplate.st")
 	Resource systemPromptTemplate;
-	
+
 	@Bean("helpDeskChatClient")
 	public ChatClient chatClient(ChatClient.Builder chatClientBuilder,
 	                             ChatMemory chatMemory, TimeTools timeTools) {
@@ -36,6 +36,6 @@ public class HelpDeskChatClientConfig {
 			.build();
 	}
 
-	
-	
+
+
 }

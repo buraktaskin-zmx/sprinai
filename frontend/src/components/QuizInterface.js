@@ -13,52 +13,91 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         generateQuiz();
     }, []);
 
+    // QuizInterface.js - sadece generateQuiz fonksiyonunu güncelle
+// QuizInterface.js'te generateQuiz fonksiyonunu tamamen değiştirin
+
     const generateQuiz = async () => {
         setIsGenerating(true);
         try {
-            // Alternatif RAG-based approach'u test et
+            console.log('Starting quiz generation...');
+
+            // API'yi çağır
             const response = await chatService.generateQuizRAG('burak', 5, 'orta');
+            console.log('Raw API response:', response);
 
             try {
-                const quizData = JSON.parse(response);
+                // Response zaten parsed JSON object olabilir veya string olabilir
+                const quizData = typeof response === 'string' ? JSON.parse(response) : response;
+                console.log('Parsed quiz data:', quizData);
+
+                if (quizData.error) {
+                    console.error('Quiz error:', quizData.error);
+                    setQuestions(getDefaultQuestions());
+                    return;
+                }
+
                 if (quizData.questions && Array.isArray(quizData.questions)) {
-                    setQuestions(quizData.questions);
+                    // Backend'den gelen format: {A: "text", B: "text", C: "text", D: "text"}
+                    // Frontend'in beklediği format: ["A) text", "B) text", "C) text", "D) text"]
+                    const convertedQuestions = quizData.questions.map((q, index) => {
+                        console.log(`Converting question ${index + 1}:`, q);
+
+                        // Answer harfini index'e çevir
+                        const answerLetter = q.answer; // "A", "B", "C", "D"
+                        const correctAnswerIndex = answerLetter === 'A' ? 0 :
+                            answerLetter === 'B' ? 1 :
+                                answerLetter === 'C' ? 2 : 3;
+
+                        return {
+                            question: q.question,
+                            options: [
+                                `A) ${q.options.A}`,
+                                `B) ${q.options.B}`,
+                                `C) ${q.options.C}`,
+                                `D) ${q.options.D}`
+                            ],
+                            correctAnswer: correctAnswerIndex,
+                            explanation: `Doğru cevap: ${answerLetter}) ${q.options[answerLetter]}`
+                        };
+                    });
+
+                    console.log('Converted questions:', convertedQuestions);
+                    setQuestions(convertedQuestions);
+                    console.log('Quiz loaded successfully with', convertedQuestions.length, 'questions');
                 } else {
-                    throw new Error('Invalid quiz format');
+                    console.error('Invalid quiz format - no questions array:', quizData);
+                    setQuestions(getDefaultQuestions());
                 }
             } catch (parseError) {
                 console.error('Quiz parse error:', parseError);
-                const sampleQuestions = [
-                    {
-                        question: "Bu doküman hangi ana konu hakkındadır?",
-                        options: ["A) Teknoloji", "B) Tarih", "C) Bilim", "D) Sanat"],
-                        correctAnswer: 0,
-                        explanation: "Dokümanın içeriğine göre ana konu teknoloji."
-                    },
-                    {
-                        question: "Dokümanda bahsedilen temel kavram nedir?",
-                        options: ["A) Kavram 1", "B) Kavram 2", "C) Kavram 3", "D) Kavram 4"],
-                        correctAnswer: 1,
-                        explanation: "Doküman boyunca bu kavram üzerinde durulmuştur."
-                    }
-                ];
-                setQuestions(sampleQuestions);
+                console.log('Failed to parse response:', response);
+                setQuestions(getDefaultQuestions());
             }
         } catch (error) {
-            console.error('Quiz generation error:', error);
-            const sampleQuestions = [
-                {
-                    question: "Bu doküman hangi konu hakkındadır?",
-                    options: ["A) Teknoloji", "B) Tarih", "C) Bilim", "D) Sanat"],
-                    correctAnswer: 0,
-                    explanation: "Örnek açıklama."
-                }
-            ];
-            setQuestions(sampleQuestions);
+            console.error('Quiz generation network error:', error);
+            setQuestions(getDefaultQuestions());
         } finally {
             setIsGenerating(false);
         }
     };
+
+// Varsayılan sorular fonksiyonu (QuizInterface.js'in en altına ekleyin)
+    const getDefaultQuestions = () => [
+        {
+            question: "Doküman yükleme sırasında bir sorun oluştu. Lütfen tekrar deneyin.",
+            options: [
+                "A) Dokümanı yeniden yükle",
+                "B) Sayfayı yenile",
+                "C) Farklı doküman dene",
+                "D) Destek al"
+            ],
+            correctAnswer: 0,
+            explanation: "Lütfen dokümanınızı yeniden yükleyip tekrar deneyin."
+        }
+    ];
+
+// Varsayılan sorular fonksiyonu ekle
+
 
     const handleAnswerSelect = (answerIndex) => {
         setSelectedAnswers({

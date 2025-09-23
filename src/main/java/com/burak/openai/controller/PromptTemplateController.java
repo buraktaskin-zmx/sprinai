@@ -16,7 +16,7 @@ public class PromptTemplateController {
 	
 	private final ChatClient chatClient;
 	
-	public PromptTemplateController(ChatClient chatClient) {
+public PromptTemplateController(@Qualifier("chatClientHR") ChatClient chatClient) {
 		this.chatClient = chatClient;
 	}
 	

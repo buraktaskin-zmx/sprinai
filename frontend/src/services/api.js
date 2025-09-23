@@ -41,31 +41,41 @@ export const chatService = {
         }
     },
 
-    generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+    // Ana quiz generation method - structured output kullanır
+    generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
         try {
-            const response = await api.post('/quiz/generate', {
+            console.log('Calling structured quiz API with:', { username, questionCount, difficulty });
+
+            const response = await api.post('/quiz/generate-structured', {
                 username: username,
                 questionCount: questionCount,
                 difficulty: difficulty
             });
+
+            console.log('Structured quiz API response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Quiz generation error:', error);
+            console.error('Quiz RAG generation error:', error);
             throw error;
         }
     },
 
-    // YENİ ALTERNATIF METHOD
-    generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+    // Fallback method - aynı endpoint'i kullanır
+    generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
         try {
-            const response = await api.post('/quiz/generate-rag', {
+            console.log('Calling fallback quiz API with:', { username, questionCount, difficulty });
+
+            // generate-structured endpoint'i kullan (backend'de tüm endpoint'ler aynı method'a yönlendiriliyor)
+            const response = await api.post('/quiz/generate-structured', {
                 username: username,
                 questionCount: questionCount,
                 difficulty: difficulty
             });
+
+            console.log('Fallback quiz API response:', response.data);
             return response.data;
         } catch (error) {
-            console.error('Quiz RAG generation error:', error);
+            console.error('Quiz generation error:', error);
             throw error;
         }
     }

@@ -28,7 +28,8 @@ public class DocumentService {
 	
 	public String uploadDocument(String username, MultipartFile file) {
 		try {
-			log.info("Uploading document for user: {}, filename: {}", username, file.getOriginalFilename());
+			log.info("Uploading document for user: {}, filename: {}, size: {} bytes",
+				username, file.getOriginalFilename(), file.getSize());
 			
 			// Generate unique document ID
 			String documentId = UUID.randomUUID().toString();
@@ -56,33 +57,59 @@ public class DocumentService {
 			TikaDocumentReader tikaReader = new TikaDocumentReader(resource);
 			List<Document> documents = tikaReader.get();
 			
+			log.info("Tika extracted {} documents from file", documents.size());
+			
+			// Log original content
+			for (int i = 0; i < documents.size(); i++) {
+				Document doc = documents.get(i);
+				log.info("Original document {}: length={}, preview={}",
+					i, doc.getText().length(),
+					doc.getText().substring(0, Math.min(200, doc.getText().length())));
+			}
+			
 			// Add metadata to each document chunk
 			documents.forEach(doc -> {
 				doc.getMetadata().put("username", username);
 				doc.getMetadata().put("documentId", documentId);
 				doc.getMetadata().put("originalFilename", file.getOriginalFilename());
 				doc.getMetadata().put("uploadDate", LocalDateTime.now().toString());
+				doc.getMetadata().put("contentType", file.getContentType());
 			});
 			
-			// Split documents into chunks
+			// İYİLEŞTİRİLMİŞ CHUNKING AYARLARI
 			TextSplitter textSplitter = TokenTextSplitter.builder()
-				.withChunkSize(200)
-				.withMaxNumChunks(400)
+				.withChunkSize(1000)        // Daha büyük chunk'lar (200'den 1000'e)
+				     // Chunk'lar arası overlap ekle
+				.withMaxNumChunks(1000)     // Maksimum chunk sayısını artır
+				.withKeepSeparator(true)    // Ayırıcıları koru
 				.build();
 			
 			List<Document> splitDocuments = textSplitter.split(documents);
 			
+			log.info("Text splitting resulted in {} chunks", splitDocuments.size());
+			
+			// Her chunk'u logla (debug için)
+			for (int i = 0; i < Math.min(5, splitDocuments.size()); i++) {
+				Document chunk = splitDocuments.get(i);
+				log.info("Chunk {}: length={}, content={}",
+					i, chunk.getText().length(),
+					chunk.getText().substring(0, Math.min(150, chunk.getText().length())));
+			}
+			
 			// Store in vector database
 			vectorStore.add(splitDocuments);
 			
-			log.info("Document processed successfully. DocumentId: {}, Chunks: {}",
-				documentId, splitDocuments.size());
+			log.info("Document processing completed successfully. DocumentId: {}, Original docs: {}, Final chunks: {}",
+				documentId, documents.size(), splitDocuments.size());
 			
 			return documentId;
 			
 		} catch (IOException e) {
 			log.error("Error processing document for user: {}", username, e);
 			throw new RuntimeException("Error processing document: " + e.getMessage());
+		} catch (Exception e) {
+			log.error("Unexpected error processing document for user: {}", username, e);
+			throw new RuntimeException("Unexpected error: " + e.getMessage());
 		}
 	}
 	
@@ -101,8 +128,8 @@ public class DocumentService {
 		// Delete from database
 		userDocumentRepository.delete(document);
 		
-		// Note: Qdrant doesn't have a direct way to delete by metadata filter
-		// For production, you might want to implement a more sophisticated cleanup strategy
+		// Note: Qdrant doesn't have direct delete by metadata
+		// For production, implement cleanup strategy
 		log.info("Document deleted successfully: {}", documentId);
 	}
 }

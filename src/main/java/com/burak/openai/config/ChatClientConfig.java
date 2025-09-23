@@ -19,7 +19,7 @@ import java.util.List;
 @Configuration
 public class ChatClientConfig {
 	
-	@Bean
+	@Bean("chatClientHR")
 	public ChatClient chatClient(ChatClient.Builder chatClientBuilder) {
 		ChatOptions chatOptions = ChatOptions.builder().model("gpt-4.1-mini")
 			.temperature(0.8).build();

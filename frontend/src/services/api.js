@@ -78,6 +78,43 @@ export const chatService = {
             console.error('Quiz generation error:', error);
             throw error;
         }
+    },
+
+    // YENİ: Quiz değerlendirmesi
+    evaluateQuiz: async (questions, answers, username = 'burak') => {
+        try {
+            console.log('Evaluating quiz with:', { questions: questions.length, answers });
+
+            const response = await api.post('/quiz/evaluate', {
+                questions: questions,
+                answers: answers,
+                username: username
+            });
+
+            console.log('Quiz evaluation response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Quiz evaluation error:', error);
+            throw error;
+        }
+    },
+
+    // YENİ: Yanlış cevap analizi
+    analyzeMistakes: async (wrongAnswers, username = 'burak') => {
+        try {
+            console.log('Analyzing mistakes with:', { wrongAnswers: wrongAnswers.length });
+
+            const response = await api.post('/quiz/analyzeMistakes', {
+                wrongAnswers: wrongAnswers,
+                username: username
+            });
+
+            console.log('Mistake analysis response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Mistake analysis error:', error);
+            throw error;
+        }
     }
 };
 

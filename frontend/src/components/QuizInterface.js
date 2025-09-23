@@ -7,26 +7,23 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState({});
     const [showResults, setShowResults] = useState(false);
-    const [score, setScore] = useState(0);
+    const [quizResult, setQuizResult] = useState(null);
+    const [isAnalyzing, setIsAnalyzing] = useState(false);
+    const [mistakeAnalysis, setMistakeAnalysis] = useState(null);
 
     useEffect(() => {
         generateQuiz();
     }, []);
-
-    // QuizInterface.js - sadece generateQuiz fonksiyonunu güncelle
-// QuizInterface.js'te generateQuiz fonksiyonunu tamamen değiştirin
 
     const generateQuiz = async () => {
         setIsGenerating(true);
         try {
             console.log('Starting quiz generation...');
 
-            // API'yi çağır
             const response = await chatService.generateQuizRAG('burak', 5, 'orta');
             console.log('Raw API response:', response);
 
             try {
-                // Response zaten parsed JSON object olabilir veya string olabilir
                 const quizData = typeof response === 'string' ? JSON.parse(response) : response;
                 console.log('Parsed quiz data:', quizData);
 
@@ -37,13 +34,10 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 }
 
                 if (quizData.questions && Array.isArray(quizData.questions)) {
-                    // Backend'den gelen format: {A: "text", B: "text", C: "text", D: "text"}
-                    // Frontend'in beklediği format: ["A) text", "B) text", "C) text", "D) text"]
                     const convertedQuestions = quizData.questions.map((q, index) => {
                         console.log(`Converting question ${index + 1}:`, q);
 
-                        // Answer harfini index'e çevir
-                        const answerLetter = q.answer; // "A", "B", "C", "D"
+                        const answerLetter = q.answer;
                         const correctAnswerIndex = answerLetter === 'A' ? 0 :
                             answerLetter === 'B' ? 1 :
                                 answerLetter === 'C' ? 2 : 3;
@@ -57,7 +51,9 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 `D) ${q.options.D}`
                             ],
                             correctAnswer: correctAnswerIndex,
-                            explanation: `Doğru cevap: ${answerLetter}) ${q.options[answerLetter]}`
+                            explanation: `Doğru cevap: ${answerLetter}) ${q.options[answerLetter]}`,
+                            // Backend için gerekli format
+                            originalOptions: q.options
                         };
                     });
 
@@ -81,7 +77,6 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         }
     };
 
-// Varsayılan sorular fonksiyonu (QuizInterface.js'in en altına ekleyin)
     const getDefaultQuestions = () => [
         {
             question: "Doküman yükleme sırasında bir sorun oluştu. Lütfen tekrar deneyin.",
@@ -92,12 +87,15 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 "D) Destek al"
             ],
             correctAnswer: 0,
-            explanation: "Lütfen dokümanınızı yeniden yükleyip tekrar deneyin."
+            explanation: "Lütfen dokümanınızı yeniden yükleyip tekrar deneyin.",
+            originalOptions: {
+                A: "Dokümanı yeniden yükle",
+                B: "Sayfayı yenile",
+                C: "Farklı doküman dene",
+                D: "Destek al"
+            }
         }
     ];
-
-// Varsayılan sorular fonksiyonu ekle
-
 
     const handleAnswerSelect = (answerIndex) => {
         setSelectedAnswers({
@@ -110,7 +108,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         if (currentQuestionIndex < questions.length - 1) {
             setCurrentQuestionIndex(currentQuestionIndex + 1);
         } else {
-            calculateScore();
+            evaluateQuiz();
         }
     };
 
@@ -120,22 +118,66 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         }
     };
 
-    const calculateScore = () => {
-        let correctCount = 0;
-        questions.forEach((question, index) => {
-            if (selectedAnswers[index] === question.correctAnswer) {
-                correctCount++;
-            }
-        });
-        setScore(correctCount);
-        setShowResults(true);
+    const evaluateQuiz = async () => {
+        try {
+            console.log('Evaluating quiz...');
+
+            // Backend için format hazırla
+            const questionsForBackend = questions.map(q => ({
+                question: q.question,
+                options: q.originalOptions,
+                correctAnswer: q.correctAnswer
+            }));
+
+            const result = await chatService.evaluateQuiz(questionsForBackend, selectedAnswers);
+            console.log('Quiz evaluation result:', result);
+
+            setQuizResult(result);
+            setShowResults(true);
+        } catch (error) {
+            console.error('Quiz evaluation failed:', error);
+            // Fallback: local calculation
+            let correctCount = 0;
+            questions.forEach((question, index) => {
+                if (selectedAnswers[index] === question.correctAnswer) {
+                    correctCount++;
+                }
+            });
+
+            setQuizResult({
+                totalQuestions: questions.length,
+                correctAnswers: correctCount,
+                wrongAnswers: questions.length - correctCount,
+                wrongAnswersList: []
+            });
+            setShowResults(true);
+        }
+    };
+
+    const analyzeMistakes = async () => {
+        if (!quizResult || !quizResult.wrongAnswersList.length) {
+            return;
+        }
+
+        setIsAnalyzing(true);
+        try {
+            console.log('Analyzing mistakes...');
+            const analysis = await chatService.analyzeMistakes(quizResult.wrongAnswersList);
+            setMistakeAnalysis(analysis.analysis);
+        } catch (error) {
+            console.error('Mistake analysis failed:', error);
+            setMistakeAnalysis('Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin.');
+        } finally {
+            setIsAnalyzing(false);
+        }
     };
 
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
         setSelectedAnswers({});
         setShowResults(false);
-        setScore(0);
+        setQuizResult(null);
+        setMistakeAnalysis(null);
     };
 
     if (isGenerating) {
@@ -162,20 +204,107 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
     if (showResults) {
         return (
             <div className="min-h-screen flex items-center justify-center p-4">
-                <div className="max-w-2xl w-full text-center animate-fade-in">
+                <div className="max-w-6xl w-full text-center animate-fade-in">
+                    {/* Test Sonuçları Header */}
                     <div className={`w-24 h-24 rounded-full flex items-center justify-center mx-auto mb-6
-            ${score >= questions.length * 0.7 ? 'bg-green-100' : score >= questions.length * 0.5 ? 'bg-yellow-100' : 'bg-red-100'}`}>
-            <span className={`text-3xl font-bold
-              ${score >= questions.length * 0.7 ? 'text-green-600' : score >= questions.length * 0.5 ? 'text-yellow-600' : 'text-red-600'}`}>
-              {Math.round((score / questions.length) * 100)}%
-            </span>
+            ${quizResult.correctAnswers >= quizResult.totalQuestions * 0.7 ? 'bg-green-100' :
+                        quizResult.correctAnswers >= quizResult.totalQuestions * 0.5 ? 'bg-yellow-100' : 'bg-red-100'}`}>
+                        <span className={`text-3xl font-bold
+              ${quizResult.correctAnswers >= quizResult.totalQuestions * 0.7 ? 'text-green-600' :
+                            quizResult.correctAnswers >= quizResult.totalQuestions * 0.5 ? 'text-yellow-600' : 'text-red-600'}`}>
+                            {Math.round((quizResult.correctAnswers / quizResult.totalQuestions) * 100)}%
+                        </span>
                     </div>
 
                     <h2 className="text-3xl font-bold text-gray-800 mb-4">Test Tamamlandı!</h2>
                     <p className="text-xl text-gray-600 mb-8">
-                        {questions.length} sorudan {score} tanesini doğru yanıtladınız
+                        {quizResult.totalQuestions} sorudan {quizResult.correctAnswers} tanesini doğru yanıtladınız
                     </p>
 
+                    {/* Yanlış Sorular Tablosu */}
+                    {quizResult.wrongAnswersList && quizResult.wrongAnswersList.length > 0 && (
+                        <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+                            <h3 className="text-2xl font-bold text-gray-800 mb-4">Yanlış Yanıtlanan Sorular</h3>
+                            <div className="overflow-x-auto">
+                                <table className="w-full border-collapse">
+                                    <thead>
+                                    <tr className="bg-gray-50">
+                                        <th className="border px-4 py-3 text-left font-semibold">Soru No</th>
+                                        <th className="border px-4 py-3 text-left font-semibold">Soru</th>
+                                        <th className="border px-4 py-3 text-left font-semibold">Doğru Cevap</th>
+                                        <th className="border px-4 py-3 text-left font-semibold">Verdiğiniz Cevap</th>
+                                    </tr>
+                                    </thead>
+                                    <tbody>
+                                    {quizResult.wrongAnswersList.map((wrongAnswer, index) => (
+                                        <tr key={index} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                                            <td className="border px-4 py-3 font-medium text-center">
+                                                {wrongAnswer.questionNumber}
+                                            </td>
+                                            <td className="border px-4 py-3">
+                                                <div className="max-w-md">
+                                                    {wrongAnswer.questionText}
+                                                </div>
+                                            </td>
+                                            <td className="border px-4 py-3">
+                                                    <span className="text-green-700 font-medium">
+                                                        {wrongAnswer.correctAnswer}
+                                                    </span>
+                                            </td>
+                                            <td className="border px-4 py-3">
+                                                    <span className="text-red-700 font-medium">
+                                                        {wrongAnswer.studentAnswer}
+                                                    </span>
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {/* Yapay Zeka Analizi Butonu */}
+                            <div className="mt-6">
+                                <button
+                                    onClick={analyzeMistakes}
+                                    disabled={isAnalyzing}
+                                    className="bg-purple-600 text-white px-6 py-3 rounded-lg hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center mx-auto"
+                                >
+                                    {isAnalyzing ? (
+                                        <>
+                                            <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+                                            Analiz ediliyor...
+                                        </>
+                                    ) : (
+                                        <>
+                                            🤖 Yanlışlarını Yapay Zeka ile Analiz Et
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+
+                            {/* Analiz Sonucu */}
+                            {mistakeAnalysis && (
+                                <div className="mt-6 bg-purple-50 border border-purple-200 rounded-lg p-6">
+                                    <h4 className="text-xl font-bold text-purple-800 mb-3">🧠 Yapay Zeka Analizi</h4>
+                                    <div className="text-left text-gray-800 whitespace-pre-line">
+                                        {mistakeAnalysis}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+
+                    {/* Tebrik Mesajı - Hiç Yanlış Yoksa */}
+                    {quizResult.wrongAnswersList && quizResult.wrongAnswersList.length === 0 && (
+                        <div className="bg-green-50 border border-green-200 rounded-lg p-6 mb-8">
+                            <h3 className="text-2xl font-bold text-green-800 mb-2">🎉 Mükemmel Performans!</h3>
+                            <p className="text-green-700">
+                                Tüm soruları doğru yanıtladınız! Dokümanı çok iyi öğrenmişsiniz.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Aksiyon Butonları */}
                     <div className="flex flex-col sm:flex-row gap-4 justify-center">
                         <button
                             onClick={restartQuiz}

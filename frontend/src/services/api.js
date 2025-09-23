@@ -80,39 +80,71 @@ export const chatService = {
         }
     },
 
-    // YENİ: Quiz değerlendirmesi
+    // GÜNCELLENMIŞ: Quiz değerlendirmesi
     evaluateQuiz: async (questions, answers, username = 'burak') => {
         try {
-            console.log('Evaluating quiz with:', { questions: questions.length, answers });
+            console.log('=== QUIZ EVALUATION API CALL ===');
+            console.log('Questions count:', questions.length);
+            console.log('Answers:', answers);
+            console.log('Username:', username);
 
-            const response = await api.post('/quiz/evaluate', {
-                questions: questions,
-                answers: answers,
-                username: username
+            // Backend'in beklediği formata çevir
+            const formattedQuestions = questions.map((q, index) => {
+                const questionData = {
+                    question: q.question,
+                    options: q.originalOptions || { // originalOptions varsa kullan, yoksa parse et
+                        A: q.options[0]?.replace(/^A\)\s*/, ''),
+                        B: q.options[1]?.replace(/^B\)\s*/, ''),
+                        C: q.options[2]?.replace(/^C\)\s*/, ''),
+                        D: q.options[3]?.replace(/^D\)\s*/, '')
+                    },
+                    correctAnswer: q.correctAnswer
+                };
+
+                console.log(`Question ${index + 1} formatted:`, questionData);
+                return questionData;
             });
+
+            const requestData = {
+                questions: formattedQuestions,
+                answers: answers
+            };
+
+            console.log('Sending evaluation request:', requestData);
+
+            const response = await api.post('/quiz/evaluate', requestData);
 
             console.log('Quiz evaluation response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Quiz evaluation error:', error);
+            console.error('Error details:', error.response?.data);
             throw error;
         }
     },
 
-    // YENİ: Yanlış cevap analizi
+    // GÜNCELLENMIŞ: Yanlış cevap analizi
     analyzeMistakes: async (wrongAnswers, username = 'burak') => {
         try {
-            console.log('Analyzing mistakes with:', { wrongAnswers: wrongAnswers.length });
+            console.log('=== MISTAKE ANALYSIS API CALL ===');
+            console.log('Wrong answers count:', wrongAnswers.length);
+            console.log('Username:', username);
+            console.log('Wrong answers data:', wrongAnswers);
 
-            const response = await api.post('/quiz/analyzeMistakes', {
+            const requestData = {
                 wrongAnswers: wrongAnswers,
                 username: username
-            });
+            };
+
+            const response = await api.post('/quiz/analyzeMistakes', requestData);
 
             console.log('Mistake analysis response:', response.data);
-            return response.data;
+
+            // Backend'den gelen response formatına göre analizi döndür
+            return response.data.analysis || response.data;
         } catch (error) {
             console.error('Mistake analysis error:', error);
+            console.error('Error details:', error.response?.data);
             throw error;
         }
     },
@@ -134,11 +166,6 @@ export const chatService = {
             throw error;
         }
     }
-
-
-
-
-
 };
 
 export default api;

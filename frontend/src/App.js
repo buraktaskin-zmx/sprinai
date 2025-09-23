@@ -1,8 +1,10 @@
+// frontend/src/App.js (UPDATED)
 import React, { useState } from 'react';
 import LandingPage from './components/LandingPage';
 import OptionSelector from './components/OptionSelector';
 import ChatInterface from './components/ChatInterface';
 import QuizInterface from './components/QuizInterface';
+import FlashCardInterface from './components/FlashCardInterface'; // NEW
 
 function App() {
     const [currentView, setCurrentView] = useState('landing');
@@ -50,6 +52,15 @@ function App() {
 
             {currentView === 'quiz' && (
                 <QuizInterface
+                    document={uploadedDocument}
+                    onBack={handleBackToOptions}
+                    onStartOver={handleStartOver}
+                />
+            )}
+
+            {/* NEW: FlashCard Interface */}
+            {currentView === 'flashcard' && (
+                <FlashCardInterface
                     document={uploadedDocument}
                     onBack={handleBackToOptions}
                     onStartOver={handleStartOver}

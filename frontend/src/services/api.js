@@ -115,7 +115,30 @@ export const chatService = {
             console.error('Mistake analysis error:', error);
             throw error;
         }
+    },
+
+    generateFlashCards: async (message, username = 'burak', cardCount = 10) => {
+        try {
+            console.log('Generating flashcards with:', { message, username, cardCount });
+
+            const response = await api.post('/flashcards/generate', {
+                message: message,
+                username: username,
+                cardCount: cardCount
+            });
+
+            console.log('FlashCard API response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('FlashCard generation error:', error);
+            throw error;
+        }
     }
+
+
+
+
+
 };
 
 export default api;

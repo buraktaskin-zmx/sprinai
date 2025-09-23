@@ -1,3 +1,4 @@
+// src/main/java/com/burak/openai/config/FlashCardChatClientConfig.java
 package com.burak.openai.config;
 
 import com.burak.openai.advisor.TokenUsageAuditAdvisor;
@@ -19,39 +20,39 @@ import org.springframework.core.io.Resource;
 import java.util.List;
 
 @Configuration
-public class UserDocumentChatClientConfig {
+public class FlashCardChatClientConfig {
 	
-	@Value("classpath:/promptTemplates/userDocumentSystemPromptTemplate.st")
-	Resource userDocumentSystemTemplate;
+	@Value("classpath:/promptTemplates/flashCardSystemPromptTemplate.st")
+	Resource flashCardSystemTemplate;
 	
-	@Bean("userDocumentChatClient")
-	public ChatClient userDocumentChatClient(ChatClient.Builder chatClientBuilder,
-	                                         ChatMemory chatMemory,
-	                                         VectorStore vectorStore) {
-		
+	@Bean("flashCardChatClient")
+	public ChatClient flashCardChatClient(ChatClient.Builder chatClientBuilder,
+	                                      ChatMemory chatMemory,
+	                                      VectorStore vectorStore) {
+//
 //		Advisor loggerAdvisor = new SimpleLoggerAdvisor();
-		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+//		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		
-		// Create RAG advisor with improved configuration
-		var userDocumentRAGAdvisor = RetrievalAugmentationAdvisor.builder()
+		// Create RAG advisor for flashcard generation
+		var flashCardRAGAdvisor = RetrievalAugmentationAdvisor.builder()
 			.documentRetriever(UserDocumentRetriever.builder()
 				.vectorStore(vectorStore)
-				.topK(10)  // Daha fazla doküman getir
-				.similarityThreshold(0.5)  // Threshold'u düşür
+				.topK(15)  // More documents for flashcard generation
+				.similarityThreshold(0.4)  // Lower threshold for more content
 				.build())
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
-		// Chat options for better quiz generation
+		// Chat options optimized for flashcard generation
 		ChatOptions chatOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")  // GPT-4 kullan
-			.temperature(0.8)  // Düşük temperature ile daha tutarlı sonuçlar
+			.model("gpt-3.5-turbo")
+			.temperature(0.4)  // Balanced creativity and consistency
 			.build();
 		
 		return chatClientBuilder
 			.defaultOptions(chatOptions)
-			.defaultSystem(userDocumentSystemTemplate)
-			.defaultAdvisors(List.of( memoryAdvisor, userDocumentRAGAdvisor))
+			.defaultSystem(flashCardSystemTemplate)
+			.defaultAdvisors(List.of( flashCardRAGAdvisor))
 			.build();
 	}
 }

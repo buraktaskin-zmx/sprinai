@@ -1,3 +1,4 @@
+// frontend/src/components/OptionSelector.js (UPDATED)
 import React from 'react';
 
 const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
@@ -11,7 +12,7 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
 
     return (
         <div className="min-h-screen flex items-center justify-center p-4">
-            <div className="max-w-4xl w-full animate-fade-in">
+            <div className="max-w-6xl w-full animate-fade-in">
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-4">
@@ -28,12 +29,12 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
                     </div>
                 </div>
 
-                {/* Options */}
-                <div className="grid md:grid-cols-2 gap-8 mb-8">
+                {/* Options - Now with 3 options */}
+                <div className="grid md:grid-cols-3 gap-6 mb-8">
                     {/* Chat Option */}
                     <div
                         onClick={() => onOptionSelect('chat')}
-                        className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 group"
+                        className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 group"
                     >
                         <div className="text-center">
                             <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-blue-200 transition-colors">
@@ -42,10 +43,10 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
                                 </svg>
                             </div>
                             <h3 className="text-xl font-bold text-gray-800 mb-2">
-                                Doküman ile Soru-Cevap
+                                Soru-Cevap
                             </h3>
-                            <p className="text-gray-600 mb-4">
-                                Yüklediğiniz doküman hakkında sorular sorun ve anında yanıt alın
+                            <p className="text-gray-600 mb-4 text-sm">
+                                Doküman hakkında sorular sorun ve anında yanıt alın
                             </p>
                             <div className="flex items-center justify-center text-blue-600 font-semibold">
                                 <span>Başla</span>
@@ -59,7 +60,7 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
                     {/* Quiz Option */}
                     <div
                         onClick={() => onOptionSelect('quiz')}
-                        className="bg-white rounded-xl p-8 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 group"
+                        className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 group"
                     >
                         <div className="text-center">
                             <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
@@ -68,12 +69,38 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
                                 </svg>
                             </div>
                             <h3 className="text-xl font-bold text-gray-800 mb-2">
-                                Çoktan Seçmeli Test
+                                Test Çöz
                             </h3>
-                            <p className="text-gray-600 mb-4">
-                                Dokümandan otomatik test soruları oluşturun ve kendinizi test edin
+                            <p className="text-gray-600 mb-4 text-sm">
+                                Otomatik test soruları oluşturun ve kendinizi test edin
                             </p>
                             <div className="flex items-center justify-center text-green-600 font-semibold">
+                                <span>Başla</span>
+                                <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* FlashCard Option - NEW */}
+                    <div
+                        onClick={() => onOptionSelect('flashcard')}
+                        className="bg-white rounded-xl p-6 shadow-lg hover:shadow-xl transition-all duration-300 cursor-pointer hover:scale-105 group"
+                    >
+                        <div className="text-center">
+                            <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-purple-200 transition-colors">
+                                <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                                </svg>
+                            </div>
+                            <h3 className="text-xl font-bold text-gray-800 mb-2">
+                                FlashCard
+                            </h3>
+                            <p className="text-gray-600 mb-4 text-sm">
+                                Özel flashcard'lar oluşturun ve etkili bir şekilde öğrenin
+                            </p>
+                            <div className="flex items-center justify-center text-purple-600 font-semibold">
                                 <span>Başla</span>
                                 <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />

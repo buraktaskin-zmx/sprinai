@@ -24,7 +24,7 @@ public class QuizController {
 	private final ChatClient quizContentAnalyzerClient;
 	private final ObjectMapper objectMapper;
 	
-	@Value("classpath:/promptTemplates/quizGenerationPromptTemplate")
+	@Value("classpath:/promptTemplates/quizGenerationPromptTemplate.st")
 	private Resource quizGenerationTemplate;
 	
 	@Value("classpath:/promptTemplates/quizFallBackPromptTemplate.st")

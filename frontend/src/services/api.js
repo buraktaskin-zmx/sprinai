@@ -41,10 +41,10 @@ export const chatService = {
         }
     },
 
-    // Ana quiz generation method - structured output kullanır
-    generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+    // Enhanced quiz generation with structured output
+    generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'medium') => {
         try {
-            console.log('Calling structured quiz API with:', { username, questionCount, difficulty });
+            console.log('Calling enhanced quiz API with:', { username, questionCount, difficulty });
 
             const response = await api.post('/quiz/generate-structured', {
                 username: username,
@@ -52,7 +52,7 @@ export const chatService = {
                 difficulty: difficulty
             });
 
-            console.log('Structured quiz API response:', response.data);
+            console.log('Enhanced quiz API response:', response.data);
             return response.data;
         } catch (error) {
             console.error('Quiz RAG generation error:', error);
@@ -60,12 +60,11 @@ export const chatService = {
         }
     },
 
-    // Fallback method - aynı endpoint'i kullanır
-    generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'orta') => {
+    // Fallback quiz generation
+    generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'medium') => {
         try {
             console.log('Calling fallback quiz API with:', { username, questionCount, difficulty });
 
-            // generate-structured endpoint'i kullan (backend'de tüm endpoint'ler aynı method'a yönlendiriliyor)
             const response = await api.post('/quiz/generate-structured', {
                 username: username,
                 questionCount: questionCount,
@@ -80,19 +79,18 @@ export const chatService = {
         }
     },
 
-    // GÜNCELLENMIŞ: Quiz değerlendirmesi
+    // Enhanced quiz evaluation
     evaluateQuiz: async (questions, answers, username = 'burak') => {
         try {
-            console.log('=== QUIZ EVALUATION API CALL ===');
+            console.log('=== ENHANCED QUIZ EVALUATION API CALL ===');
             console.log('Questions count:', questions.length);
             console.log('Answers:', answers);
             console.log('Username:', username);
 
-            // Backend'in beklediği formata çevir
             const formattedQuestions = questions.map((q, index) => {
                 const questionData = {
                     question: q.question,
-                    options: q.originalOptions || { // originalOptions varsa kullan, yoksa parse et
+                    options: q.originalOptions || {
                         A: q.options[0]?.replace(/^A\)\s*/, ''),
                         B: q.options[1]?.replace(/^B\)\s*/, ''),
                         C: q.options[2]?.replace(/^C\)\s*/, ''),
@@ -123,10 +121,10 @@ export const chatService = {
         }
     },
 
-    // GÜNCELLENMIŞ: Yanlış cevap analizi
-    analyzeMistakes: async (wrongAnswers, username = 'burak') => {
+    // Enhanced mistake analysis with web resources
+    analyzeMistakesWithWebResources: async (wrongAnswers, username = 'burak') => {
         try {
-            console.log('=== MISTAKE ANALYSIS API CALL ===');
+            console.log('=== ENHANCED MISTAKE ANALYSIS API CALL ===');
             console.log('Wrong answers count:', wrongAnswers.length);
             console.log('Username:', username);
             console.log('Wrong answers data:', wrongAnswers);
@@ -138,13 +136,57 @@ export const chatService = {
 
             const response = await api.post('/quiz/analyzeMistakes', requestData);
 
-            console.log('Mistake analysis response:', response.data);
+            console.log('Enhanced mistake analysis response:', response.data);
 
-            // Backend'den gelen response formatına göre analizi döndür
+            // Return the enhanced response with web resources
+            return {
+                analysis: response.data.analysis || response.data,
+                webResources: response.data.webResources || [],
+                canSaveReport: response.data.canSaveReport || false,
+                reportData: response.data.reportData || null
+            };
+        } catch (error) {
+            console.error('Enhanced mistake analysis error:', error);
+            console.error('Error details:', error.response?.data);
+            throw error;
+        }
+    },
+
+    // Save quiz report using MCP file server
+    saveQuizReport: async (reportRequest) => {
+        try {
+            console.log('=== SAVE QUIZ REPORT API CALL ===');
+            console.log('Report request:', reportRequest);
+
+            const response = await api.post('/quiz/saveReport', reportRequest);
+
+            console.log('Save report response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Save report error:', error);
+            console.error('Error details:', error.response?.data);
+            throw error;
+        }
+    },
+
+    // Legacy mistake analysis (fallback)
+    analyzeMistakes: async (wrongAnswers, username = 'burak') => {
+        try {
+            console.log('=== LEGACY MISTAKE ANALYSIS API CALL ===');
+            console.log('Wrong answers count:', wrongAnswers.length);
+            console.log('Username:', username);
+
+            const requestData = {
+                wrongAnswers: wrongAnswers,
+                username: username
+            };
+
+            const response = await api.post('/quiz/analyzeMistakes', requestData);
+
+            console.log('Legacy mistake analysis response:', response.data);
             return response.data.analysis || response.data;
         } catch (error) {
-            console.error('Mistake analysis error:', error);
-            console.error('Error details:', error.response?.data);
+            console.error('Legacy mistake analysis error:', error);
             throw error;
         }
     },

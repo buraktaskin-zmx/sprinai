@@ -10,6 +10,10 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
     const [quizResult, setQuizResult] = useState(null);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [mistakeAnalysis, setMistakeAnalysis] = useState(null);
+    const [webResources, setWebResources] = useState([]);
+    const [canSaveReport, setCanSaveReport] = useState(false);
+    const [reportData, setReportData] = useState(null);
+    const [isSavingReport, setIsSavingReport] = useState(false);
 
     useEffect(() => {
         generateQuiz();
@@ -18,58 +22,40 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
     const generateQuiz = async () => {
         setIsGenerating(true);
         try {
-            console.log('Starting quiz generation...');
+            const response = await chatService.generateQuizRAG('burak', 5, 'medium');
 
-            const response = await chatService.generateQuizRAG('burak', 5, 'orta');
-            console.log('Raw API response:', response);
+            if (response.error) {
+                setQuestions(getDefaultQuestions());
+                return;
+            }
 
-            try {
-                const quizData = typeof response === 'string' ? JSON.parse(response) : response;
-                console.log('Parsed quiz data:', quizData);
+            if (response.questions && Array.isArray(response.questions)) {
+                const convertedQuestions = response.questions.map((q, index) => {
+                    const answerLetter = q.answer;
+                    const correctAnswerIndex = answerLetter === 'A' ? 0 :
+                        answerLetter === 'B' ? 1 :
+                            answerLetter === 'C' ? 2 : 3;
 
-                if (quizData.error) {
-                    console.error('Quiz error:', quizData.error);
-                    setQuestions(getDefaultQuestions());
-                    return;
-                }
+                    return {
+                        question: q.question,
+                        options: [
+                            `A) ${q.options.A}`,
+                            `B) ${q.options.B}`,
+                            `C) ${q.options.C}`,
+                            `D) ${q.options.D}`
+                        ],
+                        correctAnswer: correctAnswerIndex,
+                        explanation: `Correct answer: ${answerLetter}) ${q.options[answerLetter]}`,
+                        originalOptions: q.options
+                    };
+                });
 
-                if (quizData.questions && Array.isArray(quizData.questions)) {
-                    const convertedQuestions = quizData.questions.map((q, index) => {
-                        console.log(`Converting question ${index + 1}:`, q);
-
-                        const answerLetter = q.answer;
-                        const correctAnswerIndex = answerLetter === 'A' ? 0 :
-                            answerLetter === 'B' ? 1 :
-                                answerLetter === 'C' ? 2 : 3;
-
-                        return {
-                            question: q.question,
-                            options: [
-                                `A) ${q.options.A}`,
-                                `B) ${q.options.B}`,
-                                `C) ${q.options.C}`,
-                                `D) ${q.options.D}`
-                            ],
-                            correctAnswer: correctAnswerIndex,
-                            explanation: `Correct answer: ${answerLetter}) ${q.options[answerLetter]}`,
-                            originalOptions: q.options
-                        };
-                    });
-
-                    console.log('Converted questions:', convertedQuestions);
-                    setQuestions(convertedQuestions);
-                    console.log('Quiz loaded successfully with', convertedQuestions.length, 'questions');
-                } else {
-                    console.error('Invalid quiz format - no questions array:', quizData);
-                    setQuestions(getDefaultQuestions());
-                }
-            } catch (parseError) {
-                console.error('Quiz parse error:', parseError);
-                console.log('Failed to parse response:', response);
+                setQuestions(convertedQuestions);
+            } else {
                 setQuestions(getDefaultQuestions());
             }
         } catch (error) {
-            console.error('Quiz generation network error:', error);
+            console.error('Quiz generation error:', error);
             setQuestions(getDefaultQuestions());
         } finally {
             setIsGenerating(false);
@@ -110,20 +96,12 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         }
     };
 
-    // UPDATED finishQuiz method
     const finishQuiz = async () => {
         setIsAnalyzing(true);
 
         try {
-            console.log('=== QUIZ EVALUATION STARTED ===');
-            console.log('Questions:', questions);
-            console.log('Selected Answers:', selectedAnswers);
-
-            // Call backend API
             const result = await chatService.evaluateQuiz(questions, selectedAnswers, 'burak');
-            console.log('Evaluation result:', result);
 
-            // Check response format and set appropriately
             const formattedResult = {
                 score: result.correctAnswers || 0,
                 totalQuestions: result.totalQuestions || questions.length,
@@ -131,49 +109,48 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 wrongAnswers: result.wrongAnswersList || []
             };
 
-            console.log('Formatted result:', formattedResult);
             setQuizResult(formattedResult);
             setShowResults(true);
 
-            // Perform error analysis (only if there are wrong answers)
+            // Enhanced mistake analysis with web resources
             if (formattedResult.wrongAnswers && formattedResult.wrongAnswers.length > 0) {
-                console.log('=== MISTAKE ANALYSIS STARTED ===');
-                console.log('Wrong answers for analysis:', formattedResult.wrongAnswers);
-
                 try {
-                    const analysis = await chatService.analyzeMistakes(formattedResult.wrongAnswers, 'burak');
-                    console.log('Analysis result:', analysis);
-                    setMistakeAnalysis(analysis);
+                    const analysisResponse = await chatService.analyzeMistakesWithWebResources(formattedResult.wrongAnswers, 'burak');
+
+                    setMistakeAnalysis(analysisResponse.analysis || "Analysis completed.");
+                    setWebResources(analysisResponse.webResources || []);
+                    setCanSaveReport(analysisResponse.canSaveReport || false);
+                    setReportData(analysisResponse.reportData || null);
                 } catch (analysisError) {
-                    console.error('Mistake analysis failed:', analysisError);
-                    setMistakeAnalysis("An issue occurred during analysis, but you can view your results.");
+                    console.error('Enhanced analysis failed:', analysisError);
+                    setMistakeAnalysis("Analysis completed, but additional resources could not be loaded.");
+                    setWebResources([]);
+                    setCanSaveReport(false);
                 }
             } else {
-                console.log('No wrong answers, setting success message');
                 setMistakeAnalysis("Congratulations! You answered all questions correctly. Excellent performance!");
+                setWebResources([]);
+                setCanSaveReport(true);
+                setReportData({
+                    username: 'burak',
+                    wrongAnswers: [],
+                    analysis: "Perfect score achieved!",
+                    webResources: [],
+                    timestamp: Date.now()
+                });
             }
 
         } catch (error) {
             console.error('Quiz evaluation failed:', error);
-
-            // Fallback - manual calculation
             const manualResult = calculateManualResults();
-            console.log('Using manual result:', manualResult);
             setQuizResult(manualResult);
             setShowResults(true);
-
-            // Simple message for manual analysis
-            if (manualResult.wrongAnswers.length > 0) {
-                setMistakeAnalysis("Quiz evaluation service is temporarily unavailable. You can view your incorrect answers above.");
-            } else {
-                setMistakeAnalysis("Congratulations! You answered all questions correctly!");
-            }
+            setMistakeAnalysis("Quiz evaluation completed with basic analysis.");
         } finally {
             setIsAnalyzing(false);
         }
     };
 
-    // Manual result calculation (fallback)
     const calculateManualResults = () => {
         let correct = 0;
         const wrongAnswers = [];
@@ -201,12 +178,41 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         };
     };
 
+    const handleSaveReport = async () => {
+        if (!canSaveReport || !reportData) {
+            alert('No report data available to save.');
+            return;
+        }
+
+        setIsSavingReport(true);
+        try {
+            const response = await chatService.saveQuizReport({
+                username: 'burak',
+                reportData: reportData
+            });
+
+            if (response.error) {
+                alert('Failed to save report: ' + response.error);
+            } else {
+                alert(`Report saved successfully!\nLocation: ${response.filePath}`);
+            }
+        } catch (error) {
+            console.error('Error saving report:', error);
+            alert('Failed to save report. Please try again.');
+        } finally {
+            setIsSavingReport(false);
+        }
+    };
+
     const restartQuiz = () => {
         setCurrentQuestionIndex(0);
         setSelectedAnswers({});
         setShowResults(false);
         setQuizResult(null);
         setMistakeAnalysis(null);
+        setWebResources([]);
+        setCanSaveReport(false);
+        setReportData(null);
         generateQuiz();
     };
 
@@ -288,7 +294,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                         <div className="card p-6 mb-8 text-center">
                             <div className="flex items-center justify-center space-x-3">
                                 <div className="w-6 h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></div>
-                                <span className="text-indigo-200">AI is analyzing your performance...</span>
+                                <span className="text-indigo-200">AI is analyzing your performance and finding web resources...</span>
                             </div>
                         </div>
                     )}
@@ -350,12 +356,88 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                             </div>
                         </div>
                     )}
+
+                    {/* Web Resources Section */}
+                    {webResources && webResources.length > 0 && (
+                        <div className="card p-6 mb-8">
+                            <h3 className="text-xl font-semibold text-indigo-100 mb-4 flex items-center">
+                                <svg className="w-5 h-5 mr-2 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9v-9m0-9v9" />
+                                </svg>
+                                Additional Study Resources
+                            </h3>
+                            <div className="space-y-4">
+                                {webResources.map((resource, index) => (
+                                    <div key={index} className="glass-effect p-4 rounded-xl border border-green-400/30 bg-gradient-to-r from-green-900/10 to-blue-900/10">
+                                        <h4 className="font-semibold text-green-300 mb-2">
+                                            {resource.topic}
+                                        </h4>
+                                        <div className="text-sm text-indigo-200 whitespace-pre-line mb-3">
+                                            {resource.content}
+                                        </div>
+                                        {resource.urls && resource.urls.length > 0 && (
+                                            <div className="mt-3">
+                                                <p className="text-xs text-green-400 mb-2">Related Links:</p>
+                                                <div className="space-y-1">
+                                                    {resource.urls.map((url, urlIndex) => (
+                                                        <a
+                                                            key={urlIndex}
+                                                            href={url}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs text-blue-300 hover:text-blue-200 underline block"
+                                                        >
+                                                            {url}
+                                                        </a>
+                                                    ))}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Save Report Section */}
+                    {canSaveReport && reportData && (
+                        <div className="card p-6 mb-8 text-center">
+                            <h3 className="text-xl font-semibold text-indigo-100 mb-4 flex items-center justify-center">
+                                <svg className="w-5 h-5 mr-2 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                                Save Analysis Report
+                            </h3>
+                            <p className="text-indigo-300 mb-4">
+                                Save your complete quiz analysis, including incorrect answers, AI feedback, and web resources to your computer for future reference.
+                            </p>
+                            <button
+                                onClick={handleSaveReport}
+                                disabled={isSavingReport}
+                                className={`btn-primary ${isSavingReport ? 'opacity-50 cursor-not-allowed' : 'hover:scale-105'}`}
+                            >
+                                {isSavingReport ? (
+                                    <>
+                                        <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                                        Saving Report...
+                                    </>
+                                ) : (
+                                    <>
+                                        <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                                        </svg>
+                                        Save My Wrong Answers Report
+                                    </>
+                                )}
+                            </button>
+                        </div>
+                    )}
                 </div>
             </div>
         );
     }
 
-    // Quiz View
+    // Quiz Taking View
     const currentQuestion = questions[currentQuestionIndex];
     const isLastQuestion = currentQuestionIndex === questions.length - 1;
     const answeredQuestions = Object.keys(selectedAnswers).length;
@@ -380,7 +462,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                                 </svg>
-                                Quiz
+                                Enhanced Quiz
                             </h1>
                             <p className="text-sm text-indigo-300">{document.name}</p>
                         </div>
@@ -484,14 +566,14 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 {isAnalyzing ? (
                                     <>
                                         <div className="w-4 h-4 mr-2 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                        Evaluating...
+                                        Analyzing...
                                     </>
                                 ) : (
                                     <>
                                         <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                                         </svg>
-                                        Finish
+                                        Finish & Get Analysis
                                     </>
                                 )}
                             </button>

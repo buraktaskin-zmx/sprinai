@@ -7,6 +7,16 @@
         "@modelcontextprotocol/server-filesystem",
         "D:\\Users\\taskin\\Desktop\\Deneme"
       ]
+    },
+    "tavily": {
+      "command": "C:\\Program Files\\nodejs\\npx.cmd",
+      "args": [
+        "-y",
+        "tavily-mcp@latest"
+      ],
+      "env": {
+        "TAVILY_API_KEY": "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"
+      }
     }
   }
 }

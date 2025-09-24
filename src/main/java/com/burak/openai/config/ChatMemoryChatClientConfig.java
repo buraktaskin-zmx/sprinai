@@ -47,11 +47,10 @@ public class ChatMemoryChatClientConfig {
 	@Bean("chatMemoryChatClient")
 	public ChatClient chatClient(ChatClient.Builder chatClientBuilder, ChatMemory chatMemory
 		,RetrievalAugmentationAdvisor  retrievalAugmentationAdvisor) {
-		Advisor loggerAdvisor = new SimpleLoggerAdvisor();
-		Advisor tokenUsageAdvisor = new TokenUsageAuditAdvisor();
+
 		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
 		return chatClientBuilder
-			.defaultAdvisors(List.of(loggerAdvisor, memoryAdvisor,tokenUsageAdvisor,
+			.defaultAdvisors(List.of(memoryAdvisor,
 				retrievalAugmentationAdvisor))
 			.build();
 	}
@@ -64,7 +63,7 @@ public class ChatMemoryChatClientConfig {
 				.chatClientBuilder(chatClientBuilder.clone())
 				.targetLanguage("english").build())
 			.documentRetriever(VectorStoreDocumentRetriever.builder().vectorStore(vectorStore)
-				.topK(3).similarityThreshold(0.5).build())
+				.topK(10).similarityThreshold(0.5).build())   //3ten 10 yaptık
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 	}

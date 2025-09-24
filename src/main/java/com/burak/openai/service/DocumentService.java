@@ -76,12 +76,12 @@ public class DocumentService {
 				doc.getMetadata().put("contentType", file.getContentType());
 			});
 			
-			// İYİLEŞTİRİLMİŞ CHUNKING AYARLARI
 			TextSplitter textSplitter = TokenTextSplitter.builder()
-				.withChunkSize(1000)        // Daha büyük chunk'lar (200'den 1000'e)
+				.withChunkSize(300)
+				// 1000'e)
 				     // Chunk'lar arası overlap ekle
-				.withMaxNumChunks(1000)     // Maksimum chunk sayısını artır
-				.withKeepSeparator(true)    // Ayırıcıları koru
+				.withMaxNumChunks(5000)
+				.withKeepSeparator(true)
 				.build();
 			
 			List<Document> splitDocuments = textSplitter.split(documents);
@@ -121,15 +121,12 @@ public class DocumentService {
 	public void deleteDocument(String username, String documentId) {
 		log.info("Deleting document: {} for user: {}", documentId, username);
 		
-		// Verify document belongs to user
 		UserDocument document = userDocumentRepository.findByUsernameAndDocumentId(username, documentId)
 			.orElseThrow(() -> new RuntimeException("Document not found or access denied"));
 		
-		// Delete from database
 		userDocumentRepository.delete(document);
 		
-		// Note: Qdrant doesn't have direct delete by metadata
-		// For production, implement cleanup strategy
+		
 		log.info("Document deleted successfully: {}", documentId);
 	}
 }

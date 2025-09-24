@@ -110,7 +110,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         }
     };
 
-    // GÜNCELLENMIŞ finishQuiz metodu
+    // UPDATED finishQuiz method
     const finishQuiz = async () => {
         setIsAnalyzing(true);
 
@@ -119,11 +119,11 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
             console.log('Questions:', questions);
             console.log('Selected Answers:', selectedAnswers);
 
-            // Backend API'yi çağır
+            // Call backend API
             const result = await chatService.evaluateQuiz(questions, selectedAnswers, 'burak');
             console.log('Evaluation result:', result);
 
-            // Response formatını kontrol et ve uygun şekilde set et
+            // Check response format and set appropriately
             const formattedResult = {
                 score: result.correctAnswers || 0,
                 totalQuestions: result.totalQuestions || questions.length,
@@ -135,7 +135,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
             setQuizResult(formattedResult);
             setShowResults(true);
 
-            // Hata analizi yap (sadece yanlış cevaplar varsa)
+            // Perform error analysis (only if there are wrong answers)
             if (formattedResult.wrongAnswers && formattedResult.wrongAnswers.length > 0) {
                 console.log('=== MISTAKE ANALYSIS STARTED ===');
                 console.log('Wrong answers for analysis:', formattedResult.wrongAnswers);
@@ -146,34 +146,34 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                     setMistakeAnalysis(analysis);
                 } catch (analysisError) {
                     console.error('Mistake analysis failed:', analysisError);
-                    setMistakeAnalysis("Analiz sırasında bir sorun oluştu, ancak sonuçlarınızı görüntüleyebilirsiniz.");
+                    setMistakeAnalysis("An issue occurred during analysis, but you can view your results.");
                 }
             } else {
                 console.log('No wrong answers, setting success message');
-                setMistakeAnalysis("Tebrikler! Tüm soruları doğru yanıtladınız. Harika bir performans sergiledıniz!");
+                setMistakeAnalysis("Congratulations! You answered all questions correctly. Excellent performance!");
             }
 
         } catch (error) {
             console.error('Quiz evaluation failed:', error);
 
-            // Fallback - manuel hesaplama
+            // Fallback - manual calculation
             const manualResult = calculateManualResults();
             console.log('Using manual result:', manualResult);
             setQuizResult(manualResult);
             setShowResults(true);
 
-            // Manuel analiz için basit bir mesaj
+            // Simple message for manual analysis
             if (manualResult.wrongAnswers.length > 0) {
-                setMistakeAnalysis("Quiz değerlendirme hizmeti geçici olarak kullanılamıyor. Yanlış cevaplarınızı yukarıda görüntüleyebilirsiniz.");
+                setMistakeAnalysis("Quiz evaluation service is temporarily unavailable. You can view your incorrect answers above.");
             } else {
-                setMistakeAnalysis("Tebrikler! Tüm soruları doğru yanıtladınız!");
+                setMistakeAnalysis("Congratulations! You answered all questions correctly!");
             }
         } finally {
             setIsAnalyzing(false);
         }
     };
 
-    // Manuel sonuç hesaplama (fallback)
+    // Manual result calculation (fallback)
     const calculateManualResults = () => {
         let correct = 0;
         const wrongAnswers = [];
@@ -186,9 +186,9 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 wrongAnswers.push({
                     questionNumber: index + 1,
                     questionText: question.question,
-                    userAnswer: userAnswer !== undefined ? question.options[userAnswer] || 'Cevaplanmadı' : 'Cevaplanmadı',
+                    userAnswer: userAnswer !== undefined ? question.options[userAnswer] || 'Not answered' : 'Not answered',
                     correctAnswer: question.options[question.correctAnswer],
-                    explanation: question.explanation || 'Açıklama mevcut değil'
+                    explanation: question.explanation || 'No explanation available'
                 });
             }
         });
@@ -288,7 +288,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                         <div className="card p-6 mb-8 text-center">
                             <div className="flex items-center justify-center space-x-3">
                                 <div className="w-6 h-6 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></div>
-                                <span className="text-indigo-200">AI performansınızı analiz ediyor...</span>
+                                <span className="text-indigo-200">AI is analyzing your performance...</span>
                             </div>
                         </div>
                     )}
@@ -300,14 +300,14 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 <svg className="w-5 h-5 mr-2 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                                 </svg>
-                                Yanlış Cevaplanan Sorular
+                                Incorrect Answers
                             </h3>
                             <div className="space-y-4">
                                 {quizResult.wrongAnswers.map((mistake, index) => (
                                     <div key={index} className="glass-effect p-4 rounded-xl border border-red-400/30">
                                         <div className="mb-2">
                                             <span className="text-sm text-red-300 font-medium">
-                                                Soru {mistake.questionNumber}:
+                                                Question {mistake.questionNumber}:
                                             </span>
                                             <p className="font-medium text-indigo-100 mt-1">
                                                 {mistake.questionText}
@@ -315,14 +315,14 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                         </div>
                                         <div className="text-sm space-y-1">
                                             <p className="text-red-300">
-                                                <span className="font-medium">Sizin Cevabınız:</span> {mistake.userAnswer || mistake.studentAnswer}
+                                                <span className="font-medium">Your Answer:</span> {mistake.userAnswer || mistake.studentAnswer}
                                             </p>
                                             <p className="text-green-300">
-                                                <span className="font-medium">Doğru Cevap:</span> {mistake.correctAnswer}
+                                                <span className="font-medium">Correct Answer:</span> {mistake.correctAnswer}
                                             </p>
                                             {mistake.explanation && (
                                                 <p className="text-indigo-300 mt-2 italic">
-                                                    <span className="font-medium">Açıklama:</span> {mistake.explanation}
+                                                    <span className="font-medium">Explanation:</span> {mistake.explanation}
                                                 </p>
                                             )}
                                         </div>
@@ -339,7 +339,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                 <svg className="w-5 h-5 mr-2 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
                                 </svg>
-                                AI Performans Analizi
+                                AI Performance Analysis
                             </h3>
                             <div className="glass-effect p-6 rounded-xl border border-blue-400/30 bg-gradient-to-r from-blue-900/20 to-indigo-900/20">
                                 <div className="prose prose-invert max-w-none">

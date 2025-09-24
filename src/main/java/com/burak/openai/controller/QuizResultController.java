@@ -7,9 +7,13 @@ import com.burak.openai.model.WrongAnswer;
 import com.burak.openai.rag.UserDocumentRetriever;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +25,9 @@ public class QuizResultController {
 	
 	private final ChatClient chatClient;
 	
+	@Value("classpath:/promptTemplates/quizMistakeAnalysis.st")
+	private Resource mistakeAnalysisTemplate;
+	
 	public QuizResultController(@Qualifier("quizChatClient") ChatClient chatClient) {
 		this.chatClient = chatClient;
 	}
@@ -30,7 +37,7 @@ public class QuizResultController {
 		try {
 			List<WrongAnswer> wrongAnswers = new ArrayList<>();
 			
-			// Yanlış cevapları belirle
+			// Identify incorrect answers
 			for (int i = 0; i < request.getQuestions().size(); i++) {
 				var question = request.getQuestions().get(i);
 				Integer studentAnswer = request.getAnswers().get(i);
@@ -40,13 +47,13 @@ public class QuizResultController {
 						i + 1, // questionNumber (1-based)
 						question.getQuestion(),
 						getAnswerText(question.getOptions(), question.getCorrectAnswer()),
-						studentAnswer != null ? getAnswerText(question.getOptions(), studentAnswer) : "Cevaplanmadı"
+						studentAnswer != null ? getAnswerText(question.getOptions(), studentAnswer) : "Not answered"
 					);
 					wrongAnswers.add(wrongAnswer);
 				}
 			}
 			
-			// Doğru cevap sayısını hesapla
+			// Calculate correct answer count
 			int correctCount = request.getQuestions().size() - wrongAnswers.size();
 			
 			QuizResultResponse response = new QuizResultResponse(
@@ -72,34 +79,28 @@ public class QuizResultController {
 			
 			if (wrongAnswers == null || wrongAnswers.isEmpty()) {
 				return ResponseEntity.ok(new QuizMistakeAnalysis(
-					"Tebrikler! Tüm soruları doğru yanıtladınız. Harika bir performans sergiledınız!"
+					"Congratulations! You answered all questions correctly. Excellent performance!"
 				));
 			}
 			
 			// Set current username for retriever
 			UserDocumentRetriever.setCurrentUsername(username);
 			
-			// Yanlış sorular hakkında analiz prompt'u oluştur
-			StringBuilder promptBuilder = new StringBuilder();
-			promptBuilder.append("Öğrenci aşağıdaki soruları yanlış yanıtlamış. Dokümandan yola çıkarak, ");
-			promptBuilder.append("öğrencinin hangi konularda eksik olduğunu analiz et ve ne çalışması gerektiğini öner.\n\n");
-			promptBuilder.append("YANLIŞ YANITLANAN SORULAR:\n");
-			
+			// Build wrong answers text for template
+			StringBuilder wrongAnswersText = new StringBuilder();
 			for (Map<String, Object> wrongAnswer : wrongAnswers) {
-				promptBuilder.append("Soru ").append(wrongAnswer.get("questionNumber")).append(": ")
+				wrongAnswersText.append("Question ").append(wrongAnswer.get("questionNumber")).append(": ")
 					.append(wrongAnswer.get("questionText")).append("\n");
-				promptBuilder.append("Doğru Cevap: ").append(wrongAnswer.get("correctAnswer")).append("\n");
-				promptBuilder.append("Öğrencinin Cevabı: ").append(wrongAnswer.get("studentAnswer")).append("\n\n");
+				wrongAnswersText.append("Correct Answer: ").append(wrongAnswer.get("correctAnswer")).append("\n");
+				wrongAnswersText.append("Student's Answer: ").append(wrongAnswer.get("studentAnswer")).append("\n\n");
 			}
 			
-			promptBuilder.append("Lütfen:\n");
-			promptBuilder.append("1. Bu yanlış cevaplardan hangi konularda eksiklik olduğunu belirt\n");
-			promptBuilder.append("2. Bu konuları öğrenmek için somut öneriler ver\n");
-			promptBuilder.append("3. Dokümanın hangi bölümlerini tekrar okuması gerektiğini söyle\n");
-			promptBuilder.append("4. Motivasyon verici bir dille, yapıcı ve yardımcı ol\n");
+			// Load and use template
+			String template = mistakeAnalysisTemplate.getContentAsString(StandardCharsets.UTF_8);
+			String prompt = template.replace("{wrongAnswersText}", wrongAnswersText.toString());
 			
 			String analysis = chatClient.prompt()
-				.user(promptBuilder.toString())
+				.user(prompt)
 				.call()
 				.content();
 			
@@ -108,7 +109,7 @@ public class QuizResultController {
 		} catch (Exception e) {
 			e.printStackTrace();
 			return ResponseEntity.internalServerError()
-				.body(new QuizMistakeAnalysis("Analiz sırasında bir hata oluştu. Lütfen tekrar deneyin."));
+				.body(new QuizMistakeAnalysis("An error occurred during analysis. Please try again."));
 		} finally {
 			UserDocumentRetriever.clearCurrentUsername();
 		}
@@ -120,6 +121,6 @@ public class QuizResultController {
 			String key = keys[answerIndex];
 			return key + ") " + options.get(key);
 		}
-		return "Bilinmeyen cevap";
+		return "Unknown answer";
 	}
 }

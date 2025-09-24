@@ -36,16 +36,15 @@ public class QuizChatClientConfig {
 				.vectorStore(vectorStore)
 				.topK(20)  // Quiz için daha fazla doküman
 				.similarityThreshold(0.5) //00.3  // Düşük threshold, daha
-				// fazla
-				// içerik
+			
 				.build())
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
 		// Quiz için optimize edilmiş chat options
 		ChatOptions quizChatOptions = ChatOptions.builder()
-			.model("gpt-4")  // Hızlı ve ekonomik
-			.temperature(0.1)        // Tutarlı JSON output için çok düşük
+			.model("gpt-4o-mini") // Hızlı ve ekonomik
+			.temperature(0.5)        // Tutarlı JSON output için çok düşük
 			.maxTokens(2500)         // Response token limitini kontrol et
 			.topP(0.9)               // Daha deterministik sonuçlar
 			.frequencyPenalty(0.0)   // Tekrar azaltma yok
@@ -69,7 +68,7 @@ public class QuizChatClientConfig {
 		
 		// Minimal token kullanımı için çok sınırlı options
 		ChatOptions fallbackOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")
+			.model("gpt-4o-mini")
 			.temperature(0.5)        // Maximum deterministic
 			.maxTokens(10000)         // Çok düşük limit
 			.topP(0.8)
@@ -101,7 +100,7 @@ public class QuizChatClientConfig {
 		
 		// İçerik özetleme için optimize options
 		ChatOptions contentOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")
+			.model("gpt-4o-mini")
 			.temperature(0.5)
 			.maxTokens(1500)  // Özetler için yeterli
 			.build();

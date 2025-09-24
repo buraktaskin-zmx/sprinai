@@ -41,10 +41,9 @@ public class UserDocumentChatClientConfig {
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
-		// Chat options for better quiz generation
 		ChatOptions chatOptions = ChatOptions.builder()
-			.model("gpt-4")  // GPT-4 kullan
-			.temperature(0.8)  // Düşük temperature ile daha tutarlı sonuçlar
+			.model("gpt-4o-mini")  // GPT-4 kullan
+			.temperature(0.5)  // Düşük temperature ile daha tutarlı sonuçlar
 			.build();
 		
 		return chatClientBuilder

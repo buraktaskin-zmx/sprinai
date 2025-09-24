@@ -29,23 +29,22 @@ public class FlashCardChatClientConfig {
 	public ChatClient flashCardChatClient(ChatClient.Builder chatClientBuilder,
 	                                      ChatMemory chatMemory,
 	                                      VectorStore vectorStore) {
-//
-//		Advisor loggerAdvisor = new SimpleLoggerAdvisor();
-//		Advisor memoryAdvisor = MessageChatMemoryAdvisor.builder(chatMemory).build();
+
+
 		
-		// Create RAG advisor for flashcard generation
+		
 		var flashCardRAGAdvisor = RetrievalAugmentationAdvisor.builder()
 			.documentRetriever(UserDocumentRetriever.builder()
 				.vectorStore(vectorStore)
 				.topK(15)  // More documents for flashcard generation
-				.similarityThreshold(0.4)  // Lower threshold for more content
+				.similarityThreshold(0.5)  // Lower threshold for more content
 				.build())
 			.documentPostProcessors(PIIMaskingDocumentPostProcessor.builder())
 			.build();
 		
 		// Chat options optimized for flashcard generation
 		ChatOptions chatOptions = ChatOptions.builder()
-			.model("gpt-3.5-turbo")
+			.model("gpt-4o-mini")
 			.temperature(0.4)  // Balanced creativity and consistency
 			.build();
 		

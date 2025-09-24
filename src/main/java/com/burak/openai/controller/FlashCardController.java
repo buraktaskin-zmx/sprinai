@@ -8,8 +8,12 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.ai.chat.client.ChatClient;
 import org.springframework.ai.chat.prompt.ChatOptions;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.Resource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/flashcards")
@@ -18,6 +22,9 @@ public class FlashCardController {
 	
 	private final ChatClient chatClient;
 	private final ObjectMapper objectMapper;
+	
+	@Value("classpath:/promptTemplates/flashcardGenerationPromptTemplate.st")
+	private Resource flashCardTemplate;
 	
 	public FlashCardController(@Qualifier("flashCardChatClient") ChatClient chatClient,
 	                           ObjectMapper objectMapper) {
@@ -38,15 +45,13 @@ public class FlashCardController {
 		
 		if (userMessage == null || userMessage.trim().isEmpty()) {
 			return ResponseEntity.badRequest()
-				.body("{\"error\": \"Mesaj boş olamaz. Lütfen ne tür flashcard istediğinizi belirtin.\"}");
+				.body("{\"error\": \"Message cannot be empty. Please specify what type of flashcard you want.\"}");
 		}
 		
 		try {
-			// Set current username for retriever
 			UserDocumentRetriever.setCurrentUsername(username);
 			
-			// İlk olarak doküman içeriğini alalım
-			String contentQuery = "Bu dokümanda hangi konular, kavramlar, formüller, tanımlar ve önemli bilgiler var? Mümkün olduğunce detaylı listele.";
+			String contentQuery = "What topics, concepts, formulas, definitions and important information are in this document? List as detailed as possible.";
 			
 			String documentContent = chatClient.prompt()
 				.user(contentQuery)
@@ -55,58 +60,29 @@ public class FlashCardController {
 			
 			System.out.println("Document content length: " + documentContent.length());
 			
-			// Eğer doküman içeriği bulunamadıysa
+			// If document content is not found
 			if (documentContent.length() < 100 ||
-				documentContent.contains("Bu sorunun cevabı") ||
+				documentContent.contains("The answer to this question") ||
 				documentContent.contains("I don't know") ||
-				documentContent.toLowerCase().contains("bulunmuyor")) {
+				documentContent.toLowerCase().contains("not found")) {
 				
 				System.out.println("ERROR: No valid document content found");
-				return ResponseEntity.ok("{\"error\": \"Doküman içeriği bulunamadı. Lütfen önce bir doküman yükleyin.\"}");
+				return ResponseEntity.ok("{\"error\": \"Document content not found. Please upload a document first.\"}");
 			}
 			
-			// FlashCard generation prompt
-			String flashCardPrompt = String.format("""
-                Yüklenen doküman içeriğinden %d adet FlashCard oluştur. Kullanıcı talebi: "%s"
-                
-                DOKÜMAN İÇERİĞİ:
-                %s
-                
-                FLASHCARD KURALLARI:
-                1. Her flashcard'ın "front" (ön yüz) ve "back" (arka yüz) kısmı olmalı
-                2. Front kısmı: Soru, kavram, formül adı veya terim olacak
-                3. Back kısmı: Açıklama, tanım, formül veya cevap olacak
-                4. Kullanıcının talebine göre flashcard tipini belirle (formül, kelime-anlam, soru-cevap vs.)
-                5. Tüm bilgiler dokümandan alınmalı - genel bilgi kullanma
-                6. Kısa ve öğrenmeye uygun olmalı
-                
-                FLASHCARD TİP ÖRNEKLERİ:
-                
-                FORMÜL TİPİ:
-                - Front: "Güç Formülü"
-                - Back: "P = V × I (Güç = Gerilim × Akım)"
-                
-                KELİME-ANLAM TİPİ:
-                - Front: "Prokaryot"
-                - Back: "Çekirdeği olmayan, genetik materyali sitoplazmada serbest bulunan hücre tipi"
-                
-                SORU-CEVAP TİPİ:
-                - Front: "Fotosentez nerede gerçekleşir?"
-                - Back: "Bitkilerin kloroplastlarında gerçekleşir"
-                
-                TARİH TİPİ:
-                - Front: "1453"
-                - Back: "İstanbul'un fethedildiği yıl"
-                
-                Kullanıcı talebine uygun %d adet flashcard oluştur ve JSON formatında döndür.
-                """, cardCount, userMessage, documentContent, cardCount);
+			// Load template and create prompt
+			String template = flashCardTemplate.getContentAsString(StandardCharsets.UTF_8);
+			String flashCardPrompt = template
+				.replace("{cardCount}", String.valueOf(cardCount))
+				.replace("{userMessage}", userMessage)
+				.replace("{documentContent}", documentContent);
 			
 			System.out.println("Generating flashcards...");
 			
-			// Structured output ile flashcard oluştur
+			// Create flashcard with structured output
 			FlashCardResponse flashCardResponse = chatClient.prompt()
 				.options(ChatOptions.builder()
-					.temperature(0.3)
+					.temperature(0.5)
 					.model("gpt-3.5-turbo")
 					.build())
 				.user(flashCardPrompt)
@@ -115,7 +91,7 @@ public class FlashCardController {
 			
 			System.out.println("FlashCards generated successfully with " + flashCardResponse.flashcards().size() + " cards");
 			
-			// JSON'a çevir ve döndür
+			// Convert to JSON and return
 			String jsonResponse = objectMapper.writeValueAsString(flashCardResponse);
 			System.out.println("Final JSON length: " + jsonResponse.length());
 			
@@ -125,7 +101,7 @@ public class FlashCardController {
 			System.err.println("=== FLASHCARD GENERATION ERROR ===");
 			e.printStackTrace();
 			return ResponseEntity.internalServerError()
-				.body("{\"error\": \"FlashCard oluşturulurken hata: " + e.getMessage() + "\"}");
+				.body("{\"error\": \"Error while creating FlashCard: " + e.getMessage() + "\"}");
 		} finally {
 			UserDocumentRetriever.clearCurrentUsername();
 		}

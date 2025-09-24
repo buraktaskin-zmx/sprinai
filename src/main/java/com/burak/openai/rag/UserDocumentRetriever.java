@@ -94,7 +94,7 @@ public class UserDocumentRetriever implements DocumentRetriever {
 	public static class Builder {
 		private VectorStore vectorStore;
 		private int topK = 5;
-		private double similarityThreshold = 0.3;
+		private double similarityThreshold = 0.6;
 		
 		private Builder() {}
 		

@@ -38,15 +38,15 @@ public class RAGController {
 		this.vectorStore = vectorStore;
 	}
 	
-	@GetMapping("/random/chat")
-	public ResponseEntity<String> randomChat(@RequestHeader("username") String username,
-	                                         @RequestParam("message") String message) {
-		String answer = chatMemoryChatClient.prompt()
-			.advisors(a -> a.param(CONVERSATION_ID, username))
-			.user(message)
-			.call().content();
-		return ResponseEntity.ok(answer);
-	}
+//	@GetMapping("/random/chat")
+//	public ResponseEntity<String> randomChat(@RequestHeader("username") String username,
+//	                                         @RequestParam("message") String message) {
+//		String answer = chatMemoryChatClient.prompt()
+//			.advisors(a -> a.param(CONVERSATION_ID, username))
+//			.user(message)
+//			.call().content();
+//		return ResponseEntity.ok(answer);
+//	}
 	
 	@GetMapping("/document/chat")
 	public ResponseEntity<String> documentChat(@RequestHeader("username") String username,
@@ -58,15 +58,15 @@ public class RAGController {
 		return ResponseEntity.ok(answer);
 	}
 	
-	@GetMapping("/web-search/chat")
-	public ResponseEntity<String> webSearchChat(@RequestHeader("username") String username,
-	                                            @RequestParam("message") String message) {
-		String answer = webSearchChatClient.prompt()
-			.advisors(a -> a.param(CONVERSATION_ID, username))
-			.user(message)
-			.call().content();
-		return ResponseEntity.ok(answer);
-	}
+//	@GetMapping("/web-search/chat")
+//	public ResponseEntity<String> webSearchChat(@RequestHeader("username") String username,
+//	                                            @RequestParam("message") String message) {
+//		String answer = webSearchChatClient.prompt()
+//			.advisors(a -> a.param(CONVERSATION_ID, username))
+//			.user(message)
+//			.call().content();
+//		return ResponseEntity.ok(answer);
+//	}
 	
 	/**
 	 * New endpoint for querying user's uploaded documents
@@ -77,7 +77,6 @@ public class RAGController {
 		@RequestParam("message") String message) {
 
 		try {
-			// Set username in ThreadLocal for UserDocumentRetriever
 			UserDocumentRetriever.setCurrentUsername(username);
 
 			String answer = userDocumentChatClient.prompt()
@@ -92,7 +91,6 @@ public class RAGController {
 			));
 
 		} finally {
-			// Always clear ThreadLocal to prevent memory leaks
 			UserDocumentRetriever.clearCurrentUsername();
 		}
 	}

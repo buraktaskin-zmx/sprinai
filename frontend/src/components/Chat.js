@@ -47,7 +47,7 @@ const Chat = () => {
         } catch (error) {
             const errorMessage = {
                 id: Date.now() + 1,
-                text: 'Üzgünüm, bir hata oluştu. Lütfen tekrar deneyin.',
+                text: 'Sorry, an error occurred. Please try again.',
                 sender: 'bot',
                 timestamp: new Date()
             };
@@ -80,7 +80,7 @@ const Chat = () => {
             <div className="messages-container">
                 {messages.length === 0 && (
                     <div className="loading">
-                        Merhaba! Dokumentlarınız hakkında soru sorabilirsiniz.
+                        Hello! You can ask questions about your documents.
                     </div>
                 )}
 
@@ -90,7 +90,7 @@ const Chat = () => {
 
                 {isLoading && (
                     <div className="loading">
-                        Bot yazıyor...
+                       AI is typing
                     </div>
                 )}
 
@@ -102,11 +102,11 @@ const Chat = () => {
                     type="text"
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
-                    placeholder="Dokumentlarınız hakkında bir soru sorun..."
+                    placeholder=" Ask a question about your documents..."
                     disabled={isLoading}
                 />
                 <button type="submit" disabled={isLoading || !inputMessage.trim()}>
-                    Gönder
+                    Send
                 </button>
             </form>
         </div>

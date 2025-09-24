@@ -43,13 +43,17 @@ public class QuizChatClientConfig {
 		
 		// Quiz için optimize edilmiş chat options
 		ChatOptions quizChatOptions = ChatOptions.builder()
-			.model("gpt-4o-mini") // Hızlı ve ekonomik
-			.temperature(0.5)        // Tutarlı JSON output için çok düşük
-			.maxTokens(2500)         // Response token limitini kontrol et
-			.topP(0.9)               // Daha deterministik sonuçlar
-			.frequencyPenalty(0.0)   // Tekrar azaltma yok
-			.presencePenalty(0.0)    // Yeni konu teşviki yok
+			.model("gpt-4o-mini")   // Hızlı ve ekonomik
+			.temperature(0.5)       // Daha yüksek yaratıcılık için artırıldı
+			.maxTokens(2500)        // Response token limitini kontrol et
+			          // Olası tüm token dağılımlarına izin ver
+			.frequencyPenalty(0.1)  // Aynı ifadelerin tekrarını azaltır
+			.presencePenalty(0.4)   // Yeni konulara yönelimi teşvik eder
 			.build();
+		
+		
+		
+		
 		
 		return chatClientBuilder
 			.defaultOptions(quizChatOptions)

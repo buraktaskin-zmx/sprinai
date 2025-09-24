@@ -44,11 +44,11 @@ public class QuizChatClientConfig {
 		// Quiz için optimize edilmiş chat options
 		ChatOptions quizChatOptions = ChatOptions.builder()
 			.model("gpt-4o-mini")   // Hızlı ve ekonomik
-			.temperature(0.5)       // Daha yüksek yaratıcılık için artırıldı
+			.temperature(0.1)       // Daha yüksek yaratıcılık için artırıldı
 			.maxTokens(2500)        // Response token limitini kontrol et
 			          // Olası tüm token dağılımlarına izin ver
 			.frequencyPenalty(0.1)  // Aynı ifadelerin tekrarını azaltır
-			.presencePenalty(0.4)   // Yeni konulara yönelimi teşvik eder
+			.presencePenalty(0.1)   // Yeni konulara yönelimi teşvik eder
 			.build();
 		
 		

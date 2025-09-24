@@ -118,7 +118,8 @@ const NotificationSystem = ({ notifications, onRemove }) => {
 };
 
 const QuizInterface = ({ document, onBack, onStartOver }) => {
-    const [isGenerating, setIsGenerating] = useState(true);
+    const [currentView, setCurrentView] = useState('settings'); // Start with settings
+    const [isGenerating, setIsGenerating] = useState(false);
     const [questions, setQuestions] = useState([]);
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [selectedAnswers, setSelectedAnswers] = useState({});
@@ -130,6 +131,12 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
     const [canSaveReport, setCanSaveReport] = useState(false);
     const [reportData, setReportData] = useState(null);
     const [isSavingReport, setIsSavingReport] = useState(false);
+
+    // Quiz Settings
+    const [quizSettings, setQuizSettings] = useState({
+        questionCount: 5,
+        difficulty: 'medium'
+    });
 
     // Notification system state
     const [notifications, setNotifications] = useState([]);
@@ -150,17 +157,17 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         setNotifications(prev => prev.filter(n => n.id !== id));
     };
 
-    useEffect(() => {
-        generateQuiz();
-    }, []);
-
     const generateQuiz = async () => {
         setIsGenerating(true);
+        setCurrentView('generating');
+
         try {
-            const response = await chatService.generateQuizRAG('burak', 5, 'medium');
+            const response = await chatService.generateQuizRAG('burak', quizSettings.questionCount, quizSettings.difficulty);
 
             if (response.error) {
                 setQuestions(getDefaultQuestions());
+                addNotification('❌ An error occurred while generating quiz. Default questions loaded.', 'error');
+                setCurrentView('quiz');
                 return;
             }
 
@@ -186,13 +193,18 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 });
 
                 setQuestions(convertedQuestions);
+                addNotification(`✅ Quiz with ${convertedQuestions.length} questions is ready!`, 'success');
+                setCurrentView('quiz');
             } else {
                 setQuestions(getDefaultQuestions());
+                addNotification('⚠️ Quiz could not be generated. Please try again.', 'error');
+                setCurrentView('quiz');
             }
         } catch (error) {
             console.error('Quiz generation error:', error);
             setQuestions(getDefaultQuestions());
-            addNotification('❌ An error occurred while generating the quiz. Default questions loaded.', 'error');
+            addNotification('❌ An error occurred while generating quiz. Default questions loaded.', 'error');
+            setCurrentView('quiz');
         } finally {
             setIsGenerating(false);
         }
@@ -247,6 +259,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
 
             setQuizResult(formattedResult);
             setShowResults(true);
+            setCurrentView('results');
 
             // Enhanced mistake analysis with web resources
             if (formattedResult.wrongAnswers && formattedResult.wrongAnswers.length > 0) {
@@ -282,6 +295,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
             const manualResult = calculateManualResults();
             setQuizResult(manualResult);
             setShowResults(true);
+            setCurrentView('results');
             setMistakeAnalysis("Quiz evaluation completed with basic analysis.");
             addNotification('⚠️ Problem occurred during quiz evaluation, showing basic analysis.', 'warning');
         } finally {
@@ -332,7 +346,6 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
             if (response.error) {
                 addNotification(`❌ Report could not be saved: ${response.error}`, 'error', 7000);
             } else {
-                // SUCCESS - Modern notification with file path
                 const fileName = response.filePath ? response.filePath.split('\\').pop() || response.filePath.split('/').pop() : 'quiz_report.txt';
                 addNotification(
                     `📊 Quiz analysis report saved successfully! 
@@ -359,10 +372,152 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
         setWebResources([]);
         setCanSaveReport(false);
         setReportData(null);
-        generateQuiz();
+        setCurrentView('settings'); // Go back to settings
     };
 
-    if (isGenerating) {
+    const startNewQuiz = () => {
+        setCurrentView('settings');
+        setQuestions([]);
+        setCurrentQuestionIndex(0);
+        setSelectedAnswers({});
+        setShowResults(false);
+        setQuizResult(null);
+        setMistakeAnalysis(null);
+        setWebResources([]);
+        setCanSaveReport(false);
+        setReportData(null);
+    };
+
+    // Quiz Settings View
+    if (currentView === 'settings') {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                {/* Notification System */}
+                <NotificationSystem
+                    notifications={notifications}
+                    onRemove={removeNotification}
+                />
+
+                <div className="max-w-2xl w-full">
+                    {/* Header */}
+                    <div className="text-center mb-8">
+                        <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-600/20 border border-indigo-400/30 mb-6 neon-glow">
+                            <svg className="w-8 h-8 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
+                            </svg>
+                        </div>
+
+                        <h1 className="text-3xl md:text-4xl font-bold text-indigo-100 mb-4">
+                            🎯 Test Yourself!
+                        </h1>
+
+                        <div className="card max-w-md mx-auto p-4">
+                            <div className="flex items-center justify-center mb-3">
+                                <div className="w-10 h-10 bg-indigo-600/20 rounded-lg flex items-center justify-center mr-3">
+                                    <svg className="w-6 h-6 text-indigo-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                </div>
+                                <div className="text-left">
+                                    <p className="font-semibold text-indigo-100">{document.name}</p>
+                                    <p className="text-sm text-indigo-300">Preparing quiz...</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Quiz Settings */}
+                    <div className="card p-8 mb-8">
+                        <h2 className="text-xl font-bold text-indigo-100 mb-6 text-center">Quiz Settings</h2>
+
+                        {/* Question Count */}
+                        <div className="mb-6">
+                            <label className="block text-indigo-200 text-sm font-medium mb-4">
+                                📊 Number of Questions
+                            </label>
+                            <div className="flex justify-center space-x-4">
+                                {[3, 5, 7].map(count => (
+                                    <button
+                                        key={count}
+                                        onClick={() => setQuizSettings(prev => ({ ...prev, questionCount: count }))}
+                                        className={`
+                                            px-6 py-3 rounded-xl font-semibold transition-all duration-300 min-w-[80px]
+                                            ${quizSettings.questionCount === count
+                                            ? 'bg-gradient-to-r from-indigo-600 to-blue-600 text-white shadow-lg neon-glow scale-105'
+                                            : 'bg-white/10 border border-indigo-400/30 text-indigo-200 hover:bg-indigo-600/20'
+                                        }
+                                        `}
+                                    >
+                                        {count}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Difficulty Level */}
+                        <div className="mb-8">
+                            <label className="block text-indigo-200 text-sm font-medium mb-4">
+                                ⚡ Difficulty Level
+                            </label>
+                            <div className="flex justify-center space-x-4">
+                                {[
+                                    { key: 'easy', label: '😊 Easy', color: 'from-green-600 to-emerald-600' },
+                                    { key: 'medium', label: '🎯 Medium', color: 'from-yellow-600 to-orange-600' },
+                                    { key: 'hard', label: '🔥 Hard', color: 'from-red-600 to-pink-600' }
+                                ].map(diff => (
+                                    <button
+                                        key={diff.key}
+                                        onClick={() => setQuizSettings(prev => ({ ...prev, difficulty: diff.key }))}
+                                        className={`
+                                            px-6 py-3 rounded-xl font-semibold transition-all duration-300 min-w-[100px]
+                                            ${quizSettings.difficulty === diff.key
+                                            ? `bg-gradient-to-r ${diff.color} text-white shadow-lg neon-glow scale-105`
+                                            : 'bg-white/10 border border-indigo-400/30 text-indigo-200 hover:bg-indigo-600/20'
+                                        }
+                                        `}
+                                    >
+                                        {diff.label}
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Start Quiz Button */}
+                        <div className="text-center">
+                            <button
+                                onClick={generateQuiz}
+                                className="btn-primary px-8 py-4 text-lg font-bold hover:scale-105"
+                            >
+                                <svg className="w-6 h-6 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                </svg>
+                                🚀 Start Quiz!
+                            </button>
+                            <p className="text-indigo-300 text-sm mt-3">
+                                {quizSettings.questionCount} questions • {quizSettings.difficulty === 'easy' ? 'Easy' : quizSettings.difficulty === 'medium' ? 'Medium' : 'Hard'} level
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Back Button */}
+                    <div className="text-center">
+                        <button
+                            onClick={onBack}
+                            className="btn-secondary"
+                        >
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                            </svg>
+                            Back
+                        </button>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // Generating View
+    if (currentView === 'generating' || isGenerating) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <div className="text-center">
@@ -373,14 +528,15 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                         Preparing Quiz...
                     </h2>
                     <p className="text-indigo-300">
-                        Generating questions from your document<span className="loading-dots"></span>
+                        Creating {quizSettings.questionCount} {quizSettings.difficulty} level questions
+                        <span className="loading-dots"></span>
                     </p>
                 </div>
             </div>
         );
     }
 
-    if (showResults) {
+    if (showResults || currentView === 'results') {
         return (
             <div className="min-h-screen p-6">
                 {/* Notification System */}
@@ -429,7 +585,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                         </div>
 
                         <div className="flex justify-center space-x-4">
-                            <button onClick={restartQuiz} className="btn-primary">
+                            <button onClick={startNewQuiz} className="btn-primary">
                                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                                 </svg>
@@ -551,7 +707,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                         </div>
                     )}
 
-                    {/* Save Report Section with Modern UI */}
+                    {/* Save Report Section */}
                     {canSaveReport && reportData && (
                         <div className="card p-6 mb-8 text-center border border-purple-400/30 bg-gradient-to-r from-purple-900/10 to-indigo-900/10">
                             <h3 className="text-xl font-semibold text-indigo-100 mb-4 flex items-center justify-center">
@@ -585,12 +741,11 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                                         <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
                                         </svg>
-                                        📊 Save My Incorrect Answers Report
+                                        📊 Save My Performance Report
                                     </>
                                 )}
                             </button>
 
-                            {/* Additional info about the save feature */}
                             <div className="mt-4 text-xs text-indigo-400/70">
                                 <p>💾 Report will be saved in .txt format</p>
                                 <p>📁 Default location: Desktop/Test folder</p>
@@ -621,7 +776,7 @@ const QuizInterface = ({ document, onBack, onStartOver }) => {
                 <div className="max-w-4xl mx-auto flex items-center justify-between">
                     <div className="flex items-center">
                         <button
-                            onClick={onBack}
+                            onClick={startNewQuiz}
                             className="mr-4 p-2 hover:bg-indigo-500/20 rounded-full transition-all duration-300 text-indigo-200 hover:text-white"
                         >
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

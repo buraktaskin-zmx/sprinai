@@ -24,15 +24,16 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
         },
         {
             id: 'quiz',
-            title: 'Auto Quiz',
-            description: 'Generate quizzes from content and test your knowledge',
+            title: '🎯 Test Yourself',
+            description: 'Generate quizzes from your document and test your knowledge - with question count and difficulty options',
             icon: (
                 <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01" />
                 </svg>
             ),
             gradient: 'from-indigo-600 to-violet-600',
-            hoverGradient: 'from-indigo-500 to-violet-500'
+            hoverGradient: 'from-indigo-500 to-violet-500',
+            isSpecial: true // For special styling
         },
         {
             id: 'flashcard',
@@ -84,24 +85,56 @@ const OptionSelector = ({ document, onOptionSelect, onStartOver }) => {
                         <div
                             key={option.id}
                             onClick={() => onOptionSelect(option.id)}
-                            className="group cursor-pointer"
+                            className={`
+                                group cursor-pointer transition-all duration-300
+                                ${option.isSpecial ? 'transform hover:scale-110' : 'hover:scale-105'}
+                            `}
                         >
-                            <div className="card p-8 text-center hover:neon-glow transition-all duration-300 hover:scale-105 group-hover:bg-white/15">
-                                <div className={`w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-r ${option.gradient} group-hover:bg-gradient-to-r group-hover:${option.hoverGradient} flex items-center justify-center text-white transition-all duration-300 shadow-lg group-hover:shadow-xl`}>
+                            <div className={`
+                                card p-8 text-center transition-all duration-300 
+                                group-hover:neon-glow group-hover:bg-white/15
+                                ${option.isSpecial ? 'ring-2 ring-yellow-400/50 bg-gradient-to-br from-yellow-900/10 to-orange-900/10' : ''}
+                            `}>
+                              
+
+                                <div className={`
+                                    w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-r ${option.gradient} 
+                                    group-hover:bg-gradient-to-r group-hover:${option.hoverGradient} 
+                                    flex items-center justify-center text-white transition-all duration-300 
+                                    shadow-lg group-hover:shadow-xl
+                                    ${option.isSpecial ? 'animate-pulse' : ''}
+                                `}>
                                     {option.icon}
                                 </div>
 
-                                <h3 className="text-xl font-bold text-indigo-100 mb-3 group-hover:text-white transition-colors">
+                                <h3 className={`
+                                    text-xl font-bold mb-3 group-hover:text-white transition-colors
+                                    ${option.isSpecial ? 'text-yellow-200' : 'text-indigo-100'}
+                                `}>
                                     {option.title}
                                 </h3>
 
-                                <p className="text-indigo-300 group-hover:text-indigo-200 transition-colors leading-relaxed">
+                                <p className={`
+                                    leading-relaxed transition-colors
+                                    ${option.isSpecial ? 'text-yellow-100/90' : 'text-indigo-300 group-hover:text-indigo-200'}
+                                `}>
                                     {option.description}
                                 </p>
 
+                                {option.isSpecial && (
+                                    <div className="mt-4 flex justify-center space-x-2">
+                                        <span className="inline-block px-2 py-1 text-xs bg-green-500/20 text-green-300 rounded">3-7 questions</span>
+                                        <span className="inline-block px-2 py-1 text-xs bg-blue-500/20 text-blue-300 rounded">Easy-Hard</span>
+                                        <span className="inline-block px-2 py-1 text-xs bg-purple-500/20 text-purple-300 rounded">AI Analysis</span>
+                                    </div>
+                                )}
+
                                 <div className="mt-6">
-                                    <div className={`inline-flex items-center text-sm font-medium text-indigo-200 group-hover:text-white transition-all duration-300`}>
-                                        Get Started
+                                    <div className={`
+                                        inline-flex items-center text-sm font-medium transition-all duration-300
+                                        ${option.isSpecial ? 'text-yellow-200 group-hover:text-yellow-100' : 'text-indigo-200 group-hover:text-white'}
+                                    `}>
+                                        {option.isSpecial ? '🚀 Start Now' : 'Get Started'}
                                         <svg className="w-4 h-4 ml-2 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                                         </svg>

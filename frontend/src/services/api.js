@@ -41,10 +41,21 @@ export const chatService = {
         }
     },
 
-    // Enhanced quiz generation with structured output
+    // Enhanced quiz generation with quiz settings support
     generateQuizRAG: async (username = 'burak', questionCount = 5, difficulty = 'medium') => {
         try {
-            console.log('Calling enhanced quiz API with:', { username, questionCount, difficulty });
+            console.log('Calling enhanced quiz API with settings:', { username, questionCount, difficulty });
+
+            // Validate question count
+            if (questionCount < 3 || questionCount > 10) {
+                throw new Error('Question count must be between 3 and 10');
+            }
+
+            // Validate difficulty
+            const validDifficulties = ['easy', 'medium', 'hard'];
+            if (!validDifficulties.includes(difficulty)) {
+                throw new Error('Difficulty must be easy, medium, or hard');
+            }
 
             const response = await api.post('/quiz/generate-structured', {
                 username: username,
@@ -60,10 +71,10 @@ export const chatService = {
         }
     },
 
-    // Fallback quiz generation
+    // Fallback quiz generation with settings
     generateQuiz: async (username = 'burak', questionCount = 5, difficulty = 'medium') => {
         try {
-            console.log('Calling fallback quiz API with:', { username, questionCount, difficulty });
+            console.log('Calling fallback quiz API with settings:', { username, questionCount, difficulty });
 
             const response = await api.post('/quiz/generate-structured', {
                 username: username,
@@ -191,9 +202,15 @@ export const chatService = {
         }
     },
 
+    // Flashcard generation with settings
     generateFlashCards: async (message, username = 'burak', cardCount = 10) => {
         try {
-            console.log('Generating flashcards with:', { message, username, cardCount });
+            console.log('Generating flashcards with settings:', { message, username, cardCount });
+
+            // Validate card count
+            if (cardCount < 5 || cardCount > 20) {
+                throw new Error('Card count must be between 5 and 20');
+            }
 
             const response = await api.post('/flashcards/generate', {
                 message: message,

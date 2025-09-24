@@ -46,26 +46,37 @@ public class QuizController {
 		Integer questionCount = (Integer) request.getOrDefault("questionCount", 5);
 		String difficulty = (String) request.getOrDefault("difficulty", "medium");
 		
-		System.out.println("=== SPECIALIZED QUIZ GENERATION ===");
+		System.out.println("=== QUIZ GENERATION WITH SETTINGS ===");
 		System.out.println("Username: " + username);
 		System.out.println("Question Count: " + questionCount);
 		System.out.println("Difficulty: " + difficulty);
+		
+		// Validate question count
+		if (questionCount < 3 || questionCount > 10) {
+			return ResponseEntity.badRequest()
+				.body("{\"error\": \"Question count must be between 3 and 10\"}");
+		}
+		
+		// Validate difficulty
+		if (!difficulty.equals("easy") && !difficulty.equals("medium") && !difficulty.equals("hard")) {
+			return ResponseEntity.badRequest()
+				.body("{\"error\": \"Difficulty must be easy, medium, or hard\"}");
+		}
 		
 		try {
 			// Set current username for retriever
 			UserDocumentRetriever.setCurrentUsername(username);
 			
 			// PHASE 1: Content Analysis with specialized client
-			System.out.println("Phase 1: Analyzing document content with quizContentAnalyzerClient...");
+			System.out.println("Phase 1: Analyzing document content...");
 			String documentContent = quizContentAnalyzerClient.prompt()
-				.user("Summarize the main topics, important concepts, definitions and information from this document that could be used for quiz questions.")
+				.user("Analyze the document and extract key topics, important concepts, definitions, facts, and information that can be used for creating educational quiz questions. Focus on the most significant content.")
 				.call()
 				.content();
 			
 			System.out.println("Document content length: " + documentContent.length());
-			System.out.println("First 300 chars: " + documentContent.substring(0, Math.min(300, documentContent.length())));
 			
-			// If document content is not found
+			// If document content is not found or insufficient
 			if (documentContent.length() < 100 ||
 				documentContent.contains("The answer to this question") ||
 				documentContent.contains("I don't know") ||
@@ -76,7 +87,7 @@ public class QuizController {
 			}
 			
 			// PHASE 2: Quiz generation with specialized quiz client
-			System.out.println("Phase 2: Generating quiz with quizChatClient...");
+			System.out.println("Phase 2: Generating quiz with settings...");
 			
 			// Token optimization - truncate content if too long
 			String truncatedContent = documentContent.length() > 2000 ?
@@ -86,7 +97,7 @@ public class QuizController {
 			String template = quizGenerationTemplate.getContentAsString(StandardCharsets.UTF_8);
 			String quizPrompt = template
 				.replace("{questionCount}", String.valueOf(questionCount))
-				.replace("{difficulty}", difficulty)
+				.replace("{difficulty}", getDifficultyInTurkish(difficulty))
 				.replace("{documentContent}", truncatedContent);
 			
 			// Quiz client with structured output
@@ -118,18 +129,30 @@ public class QuizController {
 	}
 	
 	/**
+	 * Convert difficulty to Turkish for better prompt understanding
+	 */
+	private String getDifficultyInTurkish(String difficulty) {
+		return switch (difficulty) {
+			case "easy" -> "kolay";
+			case "medium" -> "orta";
+			case "hard" -> "zor";
+			default -> "orta";
+		};
+	}
+	
+	/**
 	 * Fallback with specialized fallback client
 	 */
 	private ResponseEntity<String> generateFallbackQuiz(String username, int questionCount, String difficulty, String content) {
 		try {
-			System.out.println("=== FALLBACK QUIZ GENERATION with quizFallbackChatClient ===");
+			System.out.println("=== FALLBACK QUIZ GENERATION ===");
 			UserDocumentRetriever.setCurrentUsername(username);
 			
 			// Load fallback template
 			String template = quizFallbackTemplate.getContentAsString(StandardCharsets.UTF_8);
 			String fallbackPrompt = template
 				.replace("{questionCount}", String.valueOf(questionCount))
-				.replace("{difficulty}", difficulty)
+				.replace("{difficulty}", getDifficultyInTurkish(difficulty))
 				.replace("{documentContent}", content.length() > 800 ? content.substring(0, 800) : content);
 			
 			String rawResponse = quizFallbackChatClient.prompt()
@@ -163,12 +186,12 @@ public class QuizController {
 			if (i > 1) questions.append(",");
 			questions.append(String.format("""
 				{
-				  "question": "General question about document %d (Due to technical issue)",
+				  "question": "Document analysis question %d (Technical issue occurred)",
 				  "options": {
-				    "A": "Important information from this document",
-				    "B": "Another piece of information from this document",
-				    "C": "Different information from this document",
-				    "D": "Additional information from this document"
+				    "A": "Primary concept from the document",
+				    "B": "Secondary concept from the document",
+				    "C": "Alternative concept from the document",
+				    "D": "Additional concept from the document"
 				  },
 				  "answer": "A"
 				}
@@ -178,7 +201,7 @@ public class QuizController {
 		String emergencyQuiz = String.format("""
 			{
 			  "questions": [%s],
-			  "note": "Simple quiz created due to technical issue. Please clear chat history and try again."
+			  "note": "Quiz created with limited functionality due to technical issue. Please try again."
 			}
 			""", questions.toString());
 		
@@ -201,7 +224,7 @@ public class QuizController {
 		return "{}";
 	}
 	
-	// Other endpoints
+	// Legacy endpoints for backward compatibility
 	@PostMapping("/generate-rag")
 	public ResponseEntity<String> generateQuizWithRAG(@RequestBody Map<String, Object> request) {
 		return generateStructuredQuiz(request);

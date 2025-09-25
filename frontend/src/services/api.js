@@ -224,6 +224,28 @@ export const chatService = {
             console.error('FlashCard generation error:', error);
             throw error;
         }
+    },
+
+    // Help Desk functionality
+    sendHelpDeskMessage: async (message, username = 'burak') => {
+        try {
+            console.log('Sending help desk message:', { message, username });
+
+            const response = await api.get('/tools/help-desk', {
+                headers: {
+                    'username': username
+                },
+                params: {
+                    'message': message
+                }
+            });
+
+            console.log('Help desk response:', response.data);
+            return response.data;
+        } catch (error) {
+            console.error('Help desk error:', error);
+            throw error;
+        }
     }
 };
 

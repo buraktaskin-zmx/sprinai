@@ -52,6 +52,29 @@
                 0 0 60px rgba(139, 92, 246, 0.1);
     }
 
+    /* Help Desk Specific Styles */
+    .help-desk-glow {
+        box-shadow:
+                0 0 20px rgba(245, 158, 11, 0.4),
+                0 0 40px rgba(251, 191, 36, 0.3),
+                0 0 60px rgba(252, 211, 77, 0.2);
+    }
+
+    .help-pulse {
+        animation: helpPulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+    }
+
+    @keyframes helpPulse {
+        0%, 100% {
+            transform: scale(1);
+            opacity: 1;
+        }
+        50% {
+            transform: scale(1.05);
+            opacity: 0.9;
+        }
+    }
+
     .pulse-animation {
         animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
@@ -180,6 +203,10 @@
         @apply px-4 py-2 bg-gradient-to-r from-indigo-700/30 to-blue-700/30 backdrop-blur-sm border border-indigo-400/30 text-indigo-100 font-medium rounded-lg hover:bg-gradient-to-r hover:from-indigo-600/40 hover:to-blue-600/40 transition-all duration-300;
     }
 
+    .btn-help {
+        @apply px-4 py-2 bg-gradient-to-r from-amber-600/80 to-orange-600/80 backdrop-blur-sm border border-amber-400/30 text-white font-medium rounded-lg hover:bg-gradient-to-r hover:from-amber-500 hover:to-orange-500 transition-all duration-300 shadow-lg hover:shadow-xl;
+    }
+
     .input-field {
         @apply w-full px-4 py-3 bg-white/10 backdrop-blur-sm border border-indigo-400/30 rounded-xl text-white placeholder-indigo-200/60 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent transition-all duration-300;
     }
@@ -198,6 +225,70 @@
 
     .message-bot {
         @apply message-bubble bg-white/10 border border-indigo-400/30 text-indigo-100 mr-auto;
+    }
+
+    /* Help Desk Overlay Animation */
+    .help-overlay-enter {
+        animation: helpOverlayEnter 0.3s ease-out forwards;
+    }
+
+    .help-overlay-exit {
+        animation: helpOverlayExit 0.3s ease-in forwards;
+    }
+
+    @keyframes helpOverlayEnter {
+        0% {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+        100% {
+            opacity: 1;
+            transform: scale(1);
+        }
+    }
+
+    @keyframes helpOverlayExit {
+        0% {
+            opacity: 1;
+            transform: scale(1);
+        }
+        100% {
+            opacity: 0;
+            transform: scale(0.9);
+        }
+    }
+
+    /* Help Desk Chat Bubbles */
+    .help-message-enter {
+        animation: helpMessageEnter 0.5s ease-out forwards;
+    }
+
+    @keyframes helpMessageEnter {
+        0% {
+            opacity: 0;
+            transform: translateY(20px) scale(0.95);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+        }
+    }
+
+    /* Help Button Bounce Effect */
+    .help-button-bounce {
+        animation: helpButtonBounce 2s ease-in-out infinite;
+    }
+
+    @keyframes helpButtonBounce {
+        0%, 20%, 50%, 80%, 100% {
+            transform: translateY(0);
+        }
+        40% {
+            transform: translateY(-10px);
+        }
+        60% {
+            transform: translateY(-5px);
+        }
     }
 }
 
@@ -258,6 +349,42 @@
     80%, 100% { content: '...'; }
 }
 
+/* Help Desk Specific Animations */
+.help-desk-fade-in {
+    animation: helpDeskFadeIn 0.4s ease-out forwards;
+}
+
+@keyframes helpDeskFadeIn {
+    0% {
+        opacity: 0;
+        backdrop-filter: blur(0px);
+    }
+    100% {
+        opacity: 1;
+        backdrop-filter: blur(8px);
+    }
+}
+
+.help-desk-slide-up {
+    animation: helpDeskSlideUp 0.4s ease-out forwards;
+}
+
+@keyframes helpDeskSlideUp {
+    0% {
+        opacity: 0;
+        transform: translateY(50px) scale(0.95);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* Quick Action Buttons */
+.quick-action-btn {
+    @apply px-3 py-2 bg-white/10 border border-indigo-400/30 rounded-lg text-indigo-200 hover:bg-indigo-500/20 hover:text-white transition-all duration-300 transform hover:scale-105 hover:shadow-lg;
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .card {
@@ -267,13 +394,13 @@
     .btn-primary {
         @apply px-4 py-2 text-sm;
     }
+
+    .help-desk-interface {
+        @apply h-full rounded-none;
+    }
 }
 
-
 /* Modern Notification System CSS */
-/* Bu kodu mevcut index.css dosyanıza ekleyin */
-
-/* Notification Progress Bar Animation */
 @keyframes progressBar {
     0% {
         width: 100%;
@@ -334,83 +461,6 @@
     border: 1px solid rgba(245, 158, 11, 0.5);
 }
 
-/* Smooth slide-in animation for notifications */
-@keyframes slideInRight {
-    0% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-    100% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-}
-
-@keyframes slideOutRight {
-    0% {
-        transform: translateX(0);
-        opacity: 1;
-    }
-    100% {
-        transform: translateX(100%);
-        opacity: 0;
-    }
-}
-
-/* Notification container positioning */
-.notification-container {
-    position: fixed;
-    top: 1rem;
-    right: 1rem;
-    z-index: 9999;
-    pointer-events: none;
-}
-
-.notification-toast {
-    pointer-events: auto;
-    margin-bottom: 0.75rem;
-    animation: slideInRight 0.3s ease-out forwards;
-}
-
-.notification-toast.closing {
-    animation: slideOutRight 0.3s ease-in forwards;
-}
-
-/* Enhanced button styles for save report */
-.save-report-button {
-    background: linear-gradient(135deg, #8b5cf6 0%, #6366f1 50%, #3b82f6 100%);
-    background-size: 200% 200%;
-    animation: gradientShift 3s ease infinite;
-    transition: all 0.3s ease;
-}
-
-.save-report-button:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow:
-            0 10px 25px rgba(139, 92, 246, 0.3),
-            0 0 0 1px rgba(255, 255, 255, 0.1);
-    animation-duration: 1.5s;
-}
-
-.save-report-button:disabled {
-    background: rgba(75, 85, 99, 0.3);
-    cursor: not-allowed;
-    transform: none;
-    animation: none;
-}
-
-@keyframes gradientShift {
-    0% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-    100% {
-        background-position: 0% 50%;
-    }
-}
-
 /* Mobile responsive improvements */
 @media (max-width: 640px) {
     .notification-container {
@@ -424,9 +474,10 @@
         max-width: none;
     }
 
-    .save-report-button {
-        font-size: 0.9rem;
-        padding: 0.75rem 1.5rem;
+    .help-desk-interface {
+        margin: 0;
+        height: 100vh;
+        border-radius: 0;
     }
 }
 
@@ -437,30 +488,25 @@
         font-weight: 600;
     }
 
-    .notification-success {
-        border-color: #22c55e;
-        background-color: rgba(22, 163, 74, 0.2);
-    }
-
-    .notification-error {
-        border-color: #ef4444;
-        background-color: rgba(220, 38, 38, 0.2);
+    .help-desk-interface {
+        border-width: 2px;
     }
 }
 
 /* Reduced motion support */
 @media (prefers-reduced-motion: reduce) {
-    .notification-toast {
+    .notification-toast,
+    .help-overlay-enter,
+    .help-message-enter,
+    .help-button-bounce,
+    .floating,
+    .pulse-animation {
         animation: none;
-        opacity: 1;
-        transform: translateX(0);
     }
 
-    .save-report-button {
-        animation: none;
-    }
-
-    .save-report-button:hover:not(:disabled) {
+    .btn-primary:hover,
+    .btn-secondary:hover,
+    .card:hover {
         transform: none;
     }
 }
